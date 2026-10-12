@@ -12,13 +12,6 @@ cleaning. It is a single-page browser program with no server and no libraries.
 This is a theoretical simulation built from published equations. The checks compare it with known
 analytical results. No measured data, and no data from any research centre, were used.
 
-## Background
-
-During my studies at Hamburg University of Technology I worked on nanobubbles in ultrapure water.
-This simulator is a separate project on larger bubbles driven by sound, as in ultrasonic and
-megasonic cleaning. Its first version is the Python model in `python/`, from October 2026; the
-browser page is a simpler implementation of the same equations.
-
 ## What it does
 
 - Solves the Keller-Miksis equation (the Rayleigh-Plesset equation with a correction for the
@@ -55,7 +48,8 @@ browser page is a simpler implementation of the same equations.
 
 ## Python model
 
-`python/bubble_dynamics.py` solves the same Keller-Miksis equation with more physics than the page:
+The Python model came first; the browser page is a simpler implementation of the same equations.
+`python/bubble_dynamics.py` solves the Keller-Miksis equation with more physics than the page:
 an effective polytropic exponent and thermal damping from Prosperetti's linear theory, a van der
 Waals hard core for the gas, and an adaptive Rosenbrock integrator (Rodas4) with an analytic
 Jacobian. It also draws regime maps over bubble size, frequency and pressure. It needs NumPy;
