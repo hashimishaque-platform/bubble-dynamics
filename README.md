@@ -15,8 +15,9 @@ analytical results. No measured data, and no data from any research centre, were
 ## Background
 
 During my studies at Hamburg University of Technology I worked on nanobubbles in ultrapure water.
-This simulator, written in 2026, is a separate project on larger bubbles driven by sound, as in
-ultrasonic and megasonic cleaning.
+This simulator is a separate project on larger bubbles driven by sound, as in ultrasonic and
+megasonic cleaning. Its first version is the Python model in `python/`, from October 2026; the
+browser page is a simpler implementation of the same equations.
 
 ## What it does
 
@@ -50,6 +51,23 @@ ultrasonic and megasonic cleaning.
 | `template.html` | The page around the code |
 | `checks.js` | The checks, for Node.js 18 or newer |
 | `build.py` | Puts the page together: `python3 build.py` |
+| `python/bubble_dynamics.py` | The Python model: thermal damping after Prosperetti, a Rosenbrock (Rodas4) integrator and regime maps |
+
+## Python model
+
+`python/bubble_dynamics.py` solves the same Keller-Miksis equation with more physics than the page:
+an effective polytropic exponent and thermal damping from Prosperetti's linear theory, a van der
+Waals hard core for the gas, and an adaptive Rosenbrock integrator (Rodas4) with an analytic
+Jacobian. It also draws regime maps over bubble size, frequency and pressure. It needs NumPy;
+SciPy is used for cross-checks, Matplotlib for the figure, and Numba speeds up the maps.
+
+```
+python3 python/bubble_dynamics.py --simulate 2 40 150     # R0 = 2 µm, 40 kHz, 150 kPa
+python3 python/bubble_dynamics.py --figure maps.png       # regime maps (slow without Numba)
+```
+
+At 40 kHz and 150 kPa a 2 µm bubble grows to 15.5 times its radius and collapses; at 1 MHz the
+same bubble reaches only 1.87 times. Its result agrees with SciPy's Radau solver to about 10<sup>−7</sup>.
 
 ## Limitations
 
