@@ -1,7 +1,9 @@
 # Bubble dynamics
 
 A single gas bubble in water driven by an ultrasonic or megasonic sound field, as in wafer
-cleaning. It is a single-page browser program with no server and no libraries.
+cleaning, computed with the Rayleigh-Plesset and Keller-Miksis equations, with the sound pressure at
+which inertial cavitation starts. It is a single-page browser program with no server and no
+libraries, plus a Python model with more physics.
 
 **Open the program:** https://hashimishaque.com/bubble-dynamics/
 
@@ -43,7 +45,8 @@ analytical results. No measured data, and no data from any research centre, were
 | `bubble.js` | The equations and the integrator |
 | `template.html` | The page around the code |
 | `checks.js` | The checks, for Node.js 18 or newer |
-| `build.py` | Puts the page together: `python3 build.py` |
+| `build.py` | Puts the page together, with its title, description and preview tags: `python3 build.py` |
+| `screenshot.png`, `social.png` | Screenshot for this README, and the preview image shown when the page is shared |
 | `python/bubble_dynamics.py` | The Python model: thermal damping after Prosperetti, a Rosenbrock (Rodas4) integrator and regime maps |
 
 ## Python model
