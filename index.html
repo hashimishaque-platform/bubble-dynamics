@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Keller-Miksis simulation of a gas bubble in an ultrasonic or megasonic field, with the inertial cavitation threshold.">
+<title>Bubble Dynamics Simulator</title>
+<style>
+:root { color-scheme: light; }
+html { background: #ffffff; }
+body {
+  background: #ffffff;
+  color: #000000;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 17px;
+  line-height: 1.4;
+  margin: 0;
+  padding-block: 16px 40px;
+  padding-inline: 16px;
+}
+.page { max-width: 64em; }
+.text { max-width: 44em; }
+h1 { font-size: 1.6em; margin: 4px 0 8px 0; }
+h2 { font-size: 1.25em; margin: 1.6em 0 0.5em 0; }
+p { margin: 0 0 10px 0; }
+ul, ol { margin: 0 0 10px 0; padding-left: 1.4em; }
+li { margin-bottom: 6px; }
+a:link { color: #0000ee; }
+a:visited { color: #551a8b; }
+hr { border: 0; border-top: 1px solid #808080; margin: 1.5em 0 0.8em 0; }
+.small { font-size: 15px; color: #333333; }
+.tool { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.fig { flex: 1 1 480px; max-width: 680px; min-width: 0; }
+.side { flex: 1 1 280px; max-width: 25em; min-width: 0; }
+svg.plot { display: block; width: 100%; height: auto; max-width: 100%; border: 1px solid #808080; background: #ffffff; }
+.caption { font-size: 15px; margin: 6px 0 16px 0; }
+fieldset { margin: 0 0 12px 0; padding: 6px 10px 10px 10px; min-width: 0; }
+legend { font-weight: bold; padding: 0 4px; }
+table.form { border-collapse: collapse; }
+table.form td { padding: 2px 8px 2px 0; vertical-align: middle; }
+input[type="number"] { width: 6em; font-size: 15px; }
+select { max-width: 100%; font-size: 15px; }
+table.data { border-collapse: collapse; margin: 6px 0 10px 0; font-size: 15px; }
+table.data th, table.data td { border: 1px solid #808080; padding: 2px 6px; text-align: right; vertical-align: top; }
+table.data th { font-weight: bold; }
+table.data th:first-child, table.data td:first-child { text-align: left; }
+.scroll { overflow-x: auto; max-width: 100%; }
+pre { font-size: 14px; overflow-x: auto; margin: 0 0 10px 0; }
+#notes p { margin: 0 0 6px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="small"><a href="/">Hashim Ishaque</a> &gt; Bubble dynamics</p>
+
+<h1>Bubble dynamics: a single gas bubble in a sound field</h1>
+<p class="text">
+This program follows one gas bubble in water while a sound wave drives it. It solves the
+Keller-Miksis equation, which is the Rayleigh-Plesset equation with a correction for the
+compressibility of the liquid. Figure 1 shows how the radius changes with time. Figure 2 shows,
+for bubbles of different sizes, the sound pressure at which a bubble starts to cavitate
+inertially. Choose an example or enter your own values and press Compute.
+</p>
+<p class="text">
+<b>About the data.</b> This is a theoretical simulation built from published equations. The
+checks compare it with known analytical results. No measured data, and no data from any
+research centre, were used.
+</p>
+
+<hr>
+
+<div class="tool">
+  <div class="fig">
+    <svg id="plot1" class="plot" viewBox="0 0 640 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bubble radius and sound pressure against time"></svg>
+    <p class="caption" id="cap1"></p>
+    <svg id="plot2" class="plot" viewBox="0 0 640 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cavitation threshold against bubble radius"></svg>
+    <p class="caption" id="cap2"></p>
+  </div>
+
+  <div class="side">
+    <form id="form" novalidate>
+      <fieldset>
+        <legend>Example</legend>
+        <select id="ex"></select>
+      </fieldset>
+
+      <fieldset>
+        <legend>Bubble and sound field</legend>
+        <table class="form">
+          <tr><td><label for="R0">Bubble radius R<sub>0</sub></label></td><td><input type="number" id="R0" step="0.1" min="0.05" max="500"> µm</td></tr>
+          <tr><td><label for="f">Frequency</label></td><td><input type="number" id="f" step="1" min="1" max="10000"> kHz</td></tr>
+          <tr><td><label for="pA">Sound pressure amplitude</label></td><td><input type="number" id="pA" step="1" min="0" max="5000"> kPa</td></tr>
+          <tr><td><label for="cycles">Number of cycles</label></td><td><input type="number" id="cycles" step="0.5" min="0.5" max="40"></td></tr>
+        </table>
+      </fieldset>
+
+      <fieldset>
+        <legend>Model</legend>
+        <table class="form">
+          <tr><td><label for="model">Equation</label></td><td><select id="model"><option value="KM">Keller-Miksis</option><option value="RP">Rayleigh-Plesset</option></select></td></tr>
+          <tr><td><label for="kappa">Gas</label></td><td><select id="kappa"><option value="1.4">adiabatic (κ = 1.4)</option><option value="1">isothermal (κ = 1)</option></select></td></tr>
+        </table>
+      </fieldset>
+
+      <fieldset>
+        <legend>Liquid (water, 20 °C)</legend>
+        <table class="form">
+          <tr><td><label for="rho">Density</label></td><td><input type="number" id="rho" step="0.1"> kg/m³</td></tr>
+          <tr><td><label for="sigma">Surface tension</label></td><td><input type="number" id="sigma" step="0.1"> mN/m</td></tr>
+          <tr><td><label for="mu">Viscosity</label></td><td><input type="number" id="mu" step="0.001"> mPa s</td></tr>
+          <tr><td><label for="pv">Vapour pressure</label></td><td><input type="number" id="pv" step="0.01"> kPa</td></tr>
+          <tr><td><label for="c">Speed of sound</label></td><td><input type="number" id="c" step="1"> m/s</td></tr>
+          <tr><td><label for="p0">Ambient pressure</label></td><td><input type="number" id="p0" step="0.1"> kPa</td></tr>
+        </table>
+        <p style="margin-top:6px"><input type="button" id="water" value="Reset to water"></p>
+      </fieldset>
+
+      <p><input type="submit" value="Compute"></p>
+    </form>
+
+    <div class="scroll"><table class="data" id="results"></table></div>
+    <div id="notes" class="small" aria-live="polite"></div>
+  </div>
+</div>
+
+<div class="text">
+
+<h2>What it is for</h2>
+<p>
+In ultrasonic and megasonic cleaning, small gas bubbles in the liquid are driven by the sound
+field. At low sound pressure a bubble only oscillates gently around its starting size. Above a
+threshold it grows to several times its size and then collapses violently. This is inertial
+cavitation. The collapse cleans surfaces, but it can also damage fine structures, which is why
+the threshold matters in wafer cleaning.
+</p>
+
+<h2>How to read the results</h2>
+<p>
+In Figure 1, a gently oscillating bubble stays close to R/R<sub>0</sub> = 1. An inertial bubble
+grows well beyond 2, collapses to a small fraction of its starting radius and then rebounds.
+The lower panel shows the sound pressure. The program starts with the low-pressure half of the
+cycle, so the bubble first grows.
+</p>
+<p>
+In Figure 2, the solid line is the sound pressure at which a bubble of radius R<sub>0</sub> first
+reaches twice its starting radius within the chosen number of cycles. Growing to 2 R<sub>0</sub>
+is a simple, widely used rule of thumb for the onset of inertial cavitation. It is a
+convention, not a sharp physical boundary. The line dips near the radius that is in resonance
+with the sound: those bubbles respond most strongly. Smaller bubbles are held together by
+surface tension, and larger bubbles are too slow to follow the sound at this frequency. Smaller
+dips can appear at radii whose own resonance is a multiple of the driving frequency. The
+dashed line is the static Blake threshold. It is the right limit when the sound is much slower
+than the bubble's own oscillation.
+</p>
+
+<h2>Model</h2>
+<p>Keller-Miksis equation for the bubble radius R(t), with Ṙ = dR/dt:</p>
+<pre>(1 − Ṙ/c) R R̈ + (3/2)(1 − Ṙ/(3c)) Ṙ² = (1 + Ṙ/c)(p_B − p_∞)/ρ + (R/(ρc)) dp_B/dt
+
+p_B = p_g0 (R0/R)^(3κ) + p_v − 2σ/R − 4μṘ/R      pressure in the liquid at the bubble wall
+p_g0 = p0 + 2σ/R0 − p_v                            gas pressure in the bubble at rest
+p_∞ = p0 − p_A sin(2π f t)                         ambient pressure plus the sound field</pre>
+<p>
+For c → ∞ this becomes the Rayleigh-Plesset equation. The driving pressure is taken at the
+bubble's position at time t, which neglects the travel time R/c across the bubble. The
+equation is solved with an adaptive Dormand-Prince Runge-Kutta method with a relative tolerance
+of 10<sup>−9</sup>.
+</p>
+<p>Linear resonance frequency and static Blake threshold (isothermal gas):</p>
+<pre>f_0 = (1 / (2π R0)) sqrt((3κ p_g0 − 2σ/R0) / ρ)
+
+R_c = R0 sqrt(3 p_g0 R0 / (2σ))                    critical radius
+p_A,Blake = p0 − p_v + 4σ / (3 R_c)                 sound amplitude needed</pre>
+
+<h2>Checks</h2>
+<p>These checks run every time the page loads, using the same code as the figures.</p>
+<div class="scroll"><table class="data" id="checks"></table></div>
+
+<h2>Limitations</h2>
+<ul>
+<li>One spherical bubble in an unbounded liquid. Near a wall, for example a wafer, a collapsing
+bubble becomes non-spherical and can form a liquid jet. That is not modelled.</li>
+<li>The gas follows a simple polytropic law. There is no heat exchange with the liquid, and no gas
+diffusion into or out of the bubble, so slow growth over many cycles (rectified diffusion) is
+missing.</li>
+<li>The Keller-Miksis equation is first order in the Mach number Ṙ/c. When the wall speed during
+a collapse comes close to the speed of sound, the details of the collapse are rough.</li>
+<li>The liquid properties are constant and the sound field is a pure sine wave.</li>
+</ul>
+
+<h2>References</h2>
+<ol>
+<li>Lord Rayleigh. On the pressure developed in a liquid during the collapse of a spherical cavity. <i>Phil. Mag.</i> 34 (1917) 94 to 98.</li>
+<li>Minnaert, M. On musical air-bubbles and the sounds of running water. <i>Phil. Mag.</i> 16 (1933) 235 to 248.</li>
+<li>Plesset, M. S. The dynamics of cavitation bubbles. <i>J. Appl. Mech.</i> 16 (1949) 277 to 282.</li>
+<li>Blake, F. G. The onset of cavitation in liquids. Technical Memo 12, Acoustics Research Laboratory, Harvard University, 1949.</li>
+<li>Keller, J. B.; Miksis, M. Bubble oscillations of large amplitude. <i>J. Acoust. Soc. Am.</i> 68 (1980) 628 to 633. <a href="https://doi.org/10.1121/1.384720" target="_blank" rel="noopener">doi:10.1121/1.384720</a></li>
+<li>Dormand, J. R.; Prince, P. J. A family of embedded Runge-Kutta formulae. <i>J. Comput. Appl. Math.</i> 6 (1980) 19 to 26.</li>
+<li>Leighton, T. G. <i>The Acoustic Bubble.</i> Academic Press, 1994.</li>
+<li>Brennen, C. E. <i>Cavitation and Bubble Dynamics.</i> Oxford University Press, 1995.</li>
+<li>Lauterborn, W.; Kurz, T. Physics of bubble oscillations. <i>Rep. Prog. Phys.</i> 73 (2010) 106501.</li>
+</ol>
+
+<hr>
+<p class="small">H. Ishaque, October 2026. <a href="/">Home page</a>.</p>
+
+</div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+// Single spherical gas bubble in a sound field.
+// Rayleigh-Plesset or Keller-Miksis equation, polytropic gas, surface tension, viscosity, vapour pressure.
+// Theoretical model only: built from published equations, no measured data and no data from any research centre.
+// Pure functions, no DOM. SI units inside.
+
+// Liquid pressure at the bubble wall and the parts needed for its time derivative.
+function wallPressure(R, V, P) {
+  const pg = P.pg0 * Math.pow(P.R0 / R, 3 * P.kappa);           // gas pressure
+  const pB = pg + P.pv - 2 * P.sigma / R - 4 * P.mu * V / R;      // liquid pressure at the wall
+  return { pg, pB };
+}
+
+// Far-field pressure: ambient plus the sound field. Rarefaction first, so the bubble grows first.
+const pInf = (t, P) => P.p0 - P.pA * Math.sin(2 * Math.PI * P.f * t);
+
+// Wall acceleration. model 'KM' = Keller-Miksis (driving evaluated at t, retardation R/c neglected),
+// model 'RP' = Rayleigh-Plesset (incompressible liquid).
+function accel(t, R, V, P) {
+  const { pg, pB } = wallPressure(R, V, P);
+  const dp = pB - pInf(t, P);
+  if (P.model === 'RP') return (dp / P.rho - 1.5 * V * V) / R;
+  const c = P.c, rho = P.rho;
+  // d(pB)/dt = dpg/dR V + 2 sigma V / R^2 - 4 mu (Rdd / R - V^2 / R^2); the Rdd part moves to the left side
+  const dpgdR = -3 * P.kappa * pg / R;
+  const rhs = (1 + V / c) * dp / rho
+            + (R / (rho * c)) * (dpgdR * V + 2 * P.sigma * V / (R * R) + 4 * P.mu * V * V / (R * R))
+            - 1.5 * (1 - V / (3 * c)) * V * V;
+  const lhs = (1 - V / c) * R + 4 * P.mu / (rho * c);
+  return rhs / lhs;
+}
+
+// Build a parameter object from user units. Everything SI afterwards.
+function makeParams(u) {
+  const P = {
+    rho: u.rho, sigma: u.sigma, mu: u.mu, pv: u.pv, c: u.c, p0: u.p0,
+    R0: u.R0, kappa: u.kappa, f: u.f, pA: u.pA, model: u.model || 'KM',
+  };
+  P.pg0 = (u.gasScale === undefined ? 1 : u.gasScale) * (P.p0 + 2 * P.sigma / P.R0 - P.pv);  // equilibrium gas pressure
+  return P;
+}
+
+// Dormand-Prince 5(4) with step-size control, in dimensionless variables
+// r = R/R0, v = (dR/dt) / (R0 f), tau = t f. Returns the accepted points.
+function simulate(P, cycles, opts) {
+  opts = opts || {};
+  const rtol = opts.rtol || 1e-9, atol = opts.atol || 1e-12;
+  const maxSteps = opts.maxSteps || 400000;
+  const R0 = P.R0, f = P.f;
+  const F = (tau, y) => {
+    const R = R0 * y[0], V = R0 * f * y[1];
+    if (!(R > 0)) return null;
+    const a = accel(tau / f, R, V, P);
+    return [y[1], a / (R0 * f * f)];
+  };
+  // Dormand-Prince coefficients
+  const c2 = 1 / 5, c3 = 3 / 10, c4 = 4 / 5, c5 = 8 / 9;
+  const a21 = 1 / 5;
+  const a31 = 3 / 40, a32 = 9 / 40;
+  const a41 = 44 / 45, a42 = -56 / 15, a43 = 32 / 9;
+  const a51 = 19372 / 6561, a52 = -25360 / 2187, a53 = 64448 / 6561, a54 = -212 / 729;
+  const a61 = 9017 / 3168, a62 = -355 / 33, a63 = 46732 / 5247, a64 = 49 / 176, a65 = -5103 / 18656;
+  const b1 = 35 / 384, b3 = 500 / 1113, b4 = 125 / 192, b5 = -2187 / 6784, b6 = 11 / 84;
+  const e1 = 71 / 57600, e3 = -71 / 16695, e4 = 71 / 1920, e5 = -17253 / 339200, e6 = 22 / 525, e7 = -1 / 40;
+  let tau = 0, y = [opts.r0 === undefined ? 1 : opts.r0, opts.v0 === undefined ? 0 : opts.v0];
+  let h = 1e-4;
+  const tEnd = cycles;
+  const out = { tau: [0], r: [y[0]], v: [y[1]], steps: 0, rejected: 0, stopped: null };
+  let k1 = F(tau, y);
+  if (!k1) { out.stopped = 'invalid start'; return out; }
+  while (tau < tEnd) {
+    if (out.steps > maxSteps) { out.stopped = 'too many steps'; break; }
+    if (tau + h > tEnd) h = tEnd - tau;
+    const Y = (k, coef) => [y[0] + h * coef.reduce((s, cf, i) => s + cf * k[i][0], 0), y[1] + h * coef.reduce((s, cf, i) => s + cf * k[i][1], 0)];
+    const k2 = F(tau + c2 * h, Y([k1], [a21]));
+    const k3 = k2 && F(tau + c3 * h, Y([k1, k2], [a31, a32]));
+    const k4 = k3 && F(tau + c4 * h, Y([k1, k2, k3], [a41, a42, a43]));
+    const k5 = k4 && F(tau + c5 * h, Y([k1, k2, k3, k4], [a51, a52, a53, a54]));
+    const k6 = k5 && F(tau + h, Y([k1, k2, k3, k4, k5], [a61, a62, a63, a64, a65]));
+    let yn = null, k7 = null;
+    if (k6) {
+      yn = Y([k1, k2, k3, k4, k5, k6], [b1, 0, b3, b4, b5, b6]);
+      k7 = yn[0] > 0 ? F(tau + h, yn) : null;
+    }
+    if (!k7) { h *= 0.25; out.rejected++; if (h < 1e-16) { out.stopped = 'step size underflow'; break; } continue; }
+    let err = 0;
+    for (let i = 0; i < 2; i++) {
+      const ei = h * (e1 * k1[i] + e3 * k3[i] + e4 * k4[i] + e5 * k5[i] + e6 * k6[i] + e7 * k7[i]);
+      const sc = atol + rtol * Math.max(Math.abs(y[i]), Math.abs(yn[i]));
+      err = Math.max(err, Math.abs(ei) / sc);
+    }
+    if (err <= 1) {
+      tau += h; y = yn; k1 = k7; out.steps++;
+      out.tau.push(tau); out.r.push(y[0]); out.v.push(y[1]);
+      if (y[0] > (opts.rStop || 1e3)) { out.stopped = 'unbounded growth'; break; }
+      h *= Math.min(5, Math.max(0.2, 0.9 * Math.pow(err || 1e-10, -0.2)));
+    } else {
+      out.rejected++;
+      h *= Math.max(0.1, 0.9 * Math.pow(err, -0.25));
+    }
+  }
+  return out;
+}
+
+// Summary numbers of a run.
+function summarize(P, run) {
+  let rmax = 1, rmin = 1, vmax = 0, iMax = 0;
+  for (let i = 0; i < run.r.length; i++) {
+    if (run.r[i] > rmax) { rmax = run.r[i]; iMax = i; }
+    vmax = Math.max(vmax, Math.abs(run.v[i]));
+  }
+  // smallest radius reached after the first maximum; NaN if the run ends at the maximum or grows without bound
+  rmin = Infinity;
+  for (let i = iMax + 1; i < run.r.length; i++) rmin = Math.min(rmin, run.r[i]);
+  if (!isFinite(rmin) || run.stopped === 'unbounded growth') rmin = NaN;
+  // if the smallest radius is the last point and the wall is still moving inwards, the collapse was cut off
+  const last = run.r.length - 1;
+  const stillShrinking = isFinite(rmin) && run.r[last] === rmin && run.v[last] < 0;
+  const speed = vmax * P.R0 * P.f;
+  return { rmax, rmin, stillShrinking, speed, mach: speed / P.c, steps: run.steps, stopped: run.stopped };
+}
+
+// Linear (small-amplitude) natural frequency in Hz, inviscid.
+function naturalFrequency(R0, u) {
+  const pg0 = u.p0 + 2 * u.sigma / R0 - u.pv;
+  const w2 = (3 * u.kappa * pg0 - 2 * u.sigma / R0) / (u.rho * R0 * R0);
+  return w2 > 0 ? Math.sqrt(w2) / (2 * Math.PI) : NaN;
+}
+
+// Radius whose linear natural frequency equals f (bisection on a log scale).
+function resonantRadius(f, u) {
+  let lo = 1e-8, hi = 1e-2;
+  if (!(naturalFrequency(lo, u) > f && naturalFrequency(hi, u) < f)) return NaN;
+  for (let i = 0; i < 100; i++) {
+    const m = Math.sqrt(lo * hi);
+    if (naturalFrequency(m, u) > f) lo = m; else hi = m;
+  }
+  return Math.sqrt(lo * hi);
+}
+
+// Blake threshold (quasi-static, isothermal gas): critical radius and the sound amplitude needed.
+function blake(R0, u) {
+  const pg0 = u.p0 + 2 * u.sigma / R0 - u.pv;
+  const Rc = R0 * Math.sqrt(3 * pg0 * R0 / (2 * u.sigma));
+  const pLiquidMin = u.pv - 4 * u.sigma / (3 * Rc);   // lowest liquid pressure the bubble can be in equilibrium with
+  return { Rc, pA: u.p0 - pLiquidMin };
+}
+
+// Smallest sound amplitude for which R reaches 2 R0 within the given number of cycles.
+function dynamicThreshold(R0, u, cycles) {
+  const reaches = (pA) => {
+    const P = makeParams(Object.assign({}, u, { R0, pA }));
+    const run = simulate(P, cycles, { rStop: 2.5, rtol: 1e-7, atol: 1e-10, maxSteps: 60000 });
+    if (run.stopped === 'unbounded growth') return true;
+    return summarize(P, run).rmax >= 2;
+  };
+  let lo = 1e2, hi = 1e7;           // Pa
+  if (reaches(lo)) return lo;
+  if (!reaches(hi)) return NaN;
+  for (let i = 0; i < 22; i++) {
+    const m = Math.sqrt(lo * hi);
+    if (reaches(m)) hi = m; else lo = m;
+    if (hi / lo < 1.005) break;
+  }
+  return Math.sqrt(lo * hi);
+}
+
+const WATER = { rho: 998.2, sigma: 72.8, mu: 1.002, pv: 2.339, c: 1482, p0: 101.325 };   // form units
+const EXAMPLES = {
+  mega:  { label: 'Megasonic cleaning: 1 MHz, 1 µm bubble, 300 kPa', R0: 1, f: 1000, pA: 300, cycles: 10, kappa: '1.4' },
+  bath:  { label: 'Ultrasonic bath: 40 kHz, 5 µm bubble, 150 kPa', R0: 5, f: 40, pA: 150, cycles: 5, kappa: '1.4' },
+  small: { label: 'Small oscillation: 1 MHz, 3 µm bubble, 10 kPa', R0: 3, f: 1000, pA: 10, cycles: 10, kappa: '1.4' },
+  blake: { label: 'Slow sound just above the Blake threshold: 20 kHz, 1 µm, 146 kPa', R0: 1, f: 20, pA: 146, cycles: 0.5, kappa: '1' },
+  custom: { label: 'Your own values' },
+};
+
+const $ = (id) => document.getElementById(id);
+const SVGNS = 'http://www.w3.org/2000/svg';
+const FONT = "'Times New Roman', Times, serif";
+function el(svg, tag, attrs) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  svg.appendChild(e);
+  return e;
+}
+function txt(svg, x, y, s, attrs) {
+  const t = el(svg, 'text', Object.assign({ x, y, 'font-family': FONT, 'font-size': 13, fill: '#000000' }, attrs || {}));
+  t.textContent = s;
+  return t;
+}
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const num = (id, fb) => { const v = parseFloat($(id).value); return isFinite(v) ? v : fb; };
+const fmt = (x, d) => (isFinite(x) ? (Math.abs(x) >= 1000 ? String(Math.round(x)) : Number(x).toPrecision(d || 3)) : 'n/a');
+
+// read the form into SI units
+function readInputs() {
+  return {
+    R0: clamp(num('R0', 1), 0.05, 500) * 1e-6,
+    f: clamp(num('f', 1000), 1, 10000) * 1e3,
+    pA: clamp(num('pA', 100), 0, 5000) * 1e3,
+    cycles: clamp(num('cycles', 5), 0.5, 40),
+    model: $('model').value,
+    kappa: parseFloat($('kappa').value),
+    rho: clamp(num('rho', WATER.rho), 100, 20000),
+    sigma: clamp(num('sigma', WATER.sigma), 0.1, 1000) * 1e-3,
+    mu: clamp(num('mu', WATER.mu), 0.001, 10000) * 1e-3,
+    pv: clamp(num('pv', WATER.pv), 0, 1000) * 1e3,
+    c: clamp(num('c', WATER.c), 100, 10000),
+    p0: clamp(num('p0', WATER.p0), 1, 100000) * 1e3,
+  };
+}
+
+function setWater() { for (const k in WATER) $(k).value = WATER[k]; }
+function setExample(key) {
+  const e = EXAMPLES[key];
+  if (!e || key === 'custom') return;
+  $('R0').value = e.R0; $('f').value = e.f; $('pA').value = e.pA; $('cycles').value = e.cycles; $('kappa').value = e.kappa;
+}
+
+// nice axis ticks
+function ticks(lo, hi, n) {
+  const span = hi - lo, raw = span / (n || 5);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => span / s <= (n || 5)) || 10 * mag;
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9 * span; v += step) out.push(Math.abs(v) < 1e-12 * span ? 0 : v);
+  return out;
+}
+const tickLabel = (v) => (Math.abs(v) >= 1000 || (Math.abs(v) < 0.01 && v !== 0) ? v.toExponential(0) : String(+v.toPrecision(4)));
+
+// ---------- Figure 1: radius and sound pressure against time ----------
+function drawTimePlot(u, run, s) {
+  const svg = $('plot1');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  el(svg, 'rect', { x: 0, y: 0, width: 640, height: 430, fill: '#ffffff' });
+  const X0 = 62, X1 = 620;
+  const top = { y0: 18, y1: 272 }, bot = { y0: 300, y1: 392 };
+  const tEnd = run.tau[run.tau.length - 1] / u.f * 1e6;           // microseconds actually simulated
+  const tMax = u.cycles / u.f * 1e6;
+  const xs = (t) => X0 + (X1 - X0) * t / tMax;
+  // radius panel
+  const rTop = Math.max(2.4, s.rmax * 1.06);
+  const yr = (r) => top.y1 - (top.y1 - top.y0) * r / rTop;
+  el(svg, 'rect', { x: X0, y: top.y0, width: X1 - X0, height: top.y1 - top.y0, fill: 'none', stroke: '#000000', 'stroke-width': 1 });
+  for (const v of ticks(0, rTop, 6)) {
+    const y = yr(v);
+    el(svg, 'line', { x1: X0, y1: y, x2: X0 + 5, y2: y, stroke: '#000000' });
+    txt(svg, X0 - 6, y + 4, tickLabel(v), { 'text-anchor': 'end', 'font-size': 12 });
+  }
+  el(svg, 'line', { x1: X0, y1: yr(1), x2: X1, y2: yr(1), stroke: '#999999', 'stroke-dasharray': '2 3' });
+  el(svg, 'line', { x1: X0, y1: yr(2), x2: X1, y2: yr(2), stroke: '#999999', 'stroke-dasharray': '6 4' });
+  txt(svg, X1 - 4, yr(2) - 4, '2 R₀', { 'text-anchor': 'end', 'font-size': 12, fill: '#555555' });
+  const lx = 18, ly = (top.y0 + top.y1) / 2;
+  txt(svg, lx, ly, 'R / R₀', { 'text-anchor': 'middle', transform: `rotate(-90 ${lx} ${ly})` });
+  // decimate: keep min and max per pixel column so collapses stay visible
+  const cols = new Map();
+  for (let i = 0; i < run.tau.length; i++) {
+    const x = Math.round(xs(run.tau[i] / u.f * 1e6));
+    const c = cols.get(x);
+    if (!c) cols.set(x, { min: run.r[i], max: run.r[i], first: i });
+    else { c.min = Math.min(c.min, run.r[i]); c.max = Math.max(c.max, run.r[i]); }
+  }
+  let d = '', first = true, prev = null;
+  for (const [x, c] of [...cols.entries()].sort((a, b) => a[0] - b[0])) {
+    // draw from the value nearer the previous one to the other, so the line stays continuous
+    const order = prev === null || Math.abs(c.min - prev) < Math.abs(c.max - prev) ? [c.min, c.max] : [c.max, c.min];
+    for (const r of order) { d += (first ? 'M' : 'L') + x + ',' + yr(Math.min(r, rTop)).toFixed(1) + ' '; first = false; }
+    prev = order[1];
+  }
+  el(svg, 'path', { d, fill: 'none', stroke: '#000000', 'stroke-width': 1.3, 'stroke-linejoin': 'round' });
+  // pressure panel
+  const pk = Math.max(u.pA / 1e3, 1);
+  const yp = (p) => (bot.y0 + bot.y1) / 2 - (bot.y1 - bot.y0) / 2 * p / pk;
+  el(svg, 'rect', { x: X0, y: bot.y0, width: X1 - X0, height: bot.y1 - bot.y0, fill: 'none', stroke: '#000000', 'stroke-width': 1 });
+  el(svg, 'line', { x1: X0, y1: yp(0), x2: X1, y2: yp(0), stroke: '#999999', 'stroke-dasharray': '2 3' });
+  for (const v of [-pk, 0, pk]) txt(svg, X0 - 6, yp(v) + 4, tickLabel(+v.toPrecision(3)), { 'text-anchor': 'end', 'font-size': 12 });
+  let dp = '';
+  for (let i = 0; i <= 600; i++) {
+    const t = tMax * i / 600, p = -u.pA / 1e3 * Math.sin(2 * Math.PI * u.f * t * 1e-6);
+    dp += (i ? 'L' : 'M') + xs(t).toFixed(1) + ',' + yp(p).toFixed(1) + ' ';
+  }
+  el(svg, 'path', { d: dp, fill: 'none', stroke: '#0000cc', 'stroke-width': 1.1 });
+  const px = 18, py = (bot.y0 + bot.y1) / 2;
+  txt(svg, px, py, 'kPa', { 'text-anchor': 'middle', transform: `rotate(-90 ${px} ${py})` });
+  // time axis
+  for (const v of ticks(0, tMax, 7)) {
+    const x = xs(v);
+    el(svg, 'line', { x1: x, y1: bot.y1, x2: x, y2: bot.y1 - 5, stroke: '#000000' });
+    el(svg, 'line', { x1: x, y1: top.y1, x2: x, y2: top.y1 - 5, stroke: '#000000' });
+    txt(svg, x, bot.y1 + 16, tickLabel(v), { 'text-anchor': 'middle', 'font-size': 12 });
+  }
+  txt(svg, (X0 + X1) / 2, 424, 'time (µs)', { 'text-anchor': 'middle' });
+  if (tEnd < tMax * 0.999) el(svg, 'line', { x1: xs(tEnd), y1: top.y0, x2: xs(tEnd), y2: top.y1, stroke: '#cc0000', 'stroke-dasharray': '3 3' });
+}
+
+// ---------- Figure 2: threshold against bubble radius ----------
+const fig2 = { key: null, Rs: [], th: [], busy: 0 };
+function fig2Range(u) {
+  const Rres = resonantRadius(u.f, u);
+  let hi = isFinite(Rres) ? clamp(4 * Rres, 10e-6, 500e-6) : 100e-6;
+  hi = Math.max(hi, 1.5 * u.R0);
+  let lo = Math.min(0.1e-6, u.R0 / 1.5);
+  return { lo, hi, Rres };
+}
+function drawThresholdPlot(u) {
+  const svg = $('plot2');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  el(svg, 'rect', { x: 0, y: 0, width: 640, height: 380, fill: '#ffffff' });
+  const X0 = 62, X1 = 620, Y0 = 16, Y1 = 330;
+  const { lo, hi, Rres } = fig2Range(u);
+  const pLo = 10e3, pHi = 10e6;
+  const xs = (R) => X0 + (X1 - X0) * Math.log(R / lo) / Math.log(hi / lo);
+  const ys = (p) => Y1 - (Y1 - Y0) * Math.log(p / pLo) / Math.log(pHi / pLo);
+  el(svg, 'rect', { x: X0, y: Y0, width: X1 - X0, height: Y1 - Y0, fill: 'none', stroke: '#000000', 'stroke-width': 1 });
+  // decade ticks
+  for (let e = -7; e <= -3; e++) {
+    for (const m of [1, 2, 5]) {
+      const R = m * Math.pow(10, e);
+      if (R < lo * 0.999 || R > hi * 1.001) continue;
+      const x = xs(R);
+      el(svg, 'line', { x1: x, y1: Y1, x2: x, y2: Y1 - (m === 1 ? 6 : 3), stroke: '#000000' });
+      if (m === 1 || (hi / lo < 300)) txt(svg, x, Y1 + 16, String(+(R * 1e6).toPrecision(3)), { 'text-anchor': 'middle', 'font-size': 12 });
+    }
+  }
+  for (const p of [1e4, 2e4, 5e4, 1e5, 2e5, 5e5, 1e6, 2e6, 5e6, 1e7]) {
+    const y = ys(p);
+    el(svg, 'line', { x1: X0, y1: y, x2: X0 + 5, y2: y, stroke: '#000000' });
+    txt(svg, X0 - 6, y + 4, String(p / 1e3), { 'text-anchor': 'end', 'font-size': 12 });
+  }
+  txt(svg, (X0 + X1) / 2, 368, 'bubble radius R₀ (µm)', { 'text-anchor': 'middle' });
+  const lx = 16, ly = (Y0 + Y1) / 2;
+  txt(svg, lx, ly, 'sound pressure amplitude (kPa)', { 'text-anchor': 'middle', transform: `rotate(-90 ${lx} ${ly})` });
+  const clipId = 'c2';
+  const cp = el(svg, 'clipPath', { id: clipId });
+  el(cp, 'rect', { x: X0, y: Y0, width: X1 - X0, height: Y1 - Y0 });
+  const g = el(svg, 'g', { 'clip-path': `url(#${clipId})` });
+  if (isFinite(Rres) && Rres > lo && Rres < hi) {
+    el(g, 'line', { x1: xs(Rres), y1: Y0, x2: xs(Rres), y2: Y1, stroke: '#999999', 'stroke-dasharray': '2 3' });
+    txt(g, xs(Rres) + 4, Y0 + 14, 'resonance', { 'font-size': 12, fill: '#555555', 'font-style': 'italic' });
+  }
+  // Blake (static) threshold
+  let db = '';
+  const uIso = Object.assign({}, u, { kappa: 1 });
+  for (let i = 0; i <= 120; i++) {
+    const R = lo * Math.pow(hi / lo, i / 120);
+    db += (i ? 'L' : 'M') + xs(R).toFixed(1) + ',' + ys(blake(R, uIso).pA).toFixed(1) + ' ';
+  }
+  el(g, 'path', { d: db, fill: 'none', stroke: '#000000', 'stroke-width': 1.1, 'stroke-dasharray': '6 4' });
+  // dynamic threshold
+  const pts = fig2.Rs.map((R, i) => [R, fig2.th[i]]).filter((p) => isFinite(p[1]));
+  if (pts.length) {
+    el(g, 'path', { d: pts.map((p, i) => (i ? 'L' : 'M') + xs(p[0]).toFixed(1) + ',' + ys(p[1]).toFixed(1)).join(' '), fill: 'none', stroke: '#cc0000', 'stroke-width': 1.6 });
+    for (const p of pts) el(g, 'circle', { cx: xs(p[0]), cy: ys(p[1]), r: 2.2, fill: '#cc0000' });
+  }
+  // the case in Figure 1
+  if (u.pA >= pLo && u.pA <= pHi) {
+    const x = xs(u.R0), y = ys(u.pA);
+    el(g, 'line', { x1: x - 6, y1: y, x2: x + 6, y2: y, stroke: '#000000', 'stroke-width': 1.6 });
+    el(g, 'line', { x1: x, y1: y - 6, x2: x, y2: y + 6, stroke: '#000000', 'stroke-width': 1.6 });
+  }
+}
+
+function fig2Key(u) { return [u.f, u.cycles, u.model, u.kappa, u.rho, u.sigma, u.mu, u.pv, u.c, u.p0].join('|'); }
+
+function computeThreshold(u) {
+  const key = fig2Key(u);
+  const { lo, hi } = fig2Range(u);
+  const rangeKey = key + '|' + lo + '|' + hi;
+  if (fig2.key === rangeKey) { drawThresholdPlot(u); updateCaption2(u, true); return; }
+  fig2.key = rangeKey;
+  const job = ++fig2.busy;
+  const N = 22;
+  fig2.Rs = []; fig2.th = [];
+  for (let i = 0; i < N; i++) fig2.Rs.push(lo * Math.pow(hi / lo, i / (N - 1)));
+  let i = 0;
+  const step = () => {
+    if (job !== fig2.busy) return;               // a newer request replaced this one
+    const t0 = Date.now();
+    while (i < N && Date.now() - t0 < 40) { fig2.th[i] = dynamicThreshold(fig2.Rs[i], u, u.cycles); i++; }
+    drawThresholdPlot(currentInputs);
+    updateCaption2(u, i >= N, i, N);
+    if (i < N) setTimeout(step, 0);
+  };
+  updateCaption2(u, false, 0, N);
+  setTimeout(step, 0);
+}
+
+function updateCaption2(u, done, i, N) {
+  const fTxt = u.f >= 1e6 ? `${+(u.f / 1e6).toPrecision(3)} MHz` : `${+(u.f / 1e3).toPrecision(3)} kHz`;
+  let s = `<b>Figure 2.</b> Sound pressure at which a bubble of radius R₀ first reaches 2 R₀ within ${u.cycles} cycles at ${fTxt} (red, ${u.model === 'KM' ? 'Keller-Miksis' : 'Rayleigh-Plesset'}), and the static Blake threshold (dashed). Above the red line the bubble cavitates inertially. Cross: the case in Figure 1.`;
+  if (!done) s += ` <i>Computing, ${i} of ${N} points.</i>`;
+  $('cap2').innerHTML = s;
+}
+
+// ---------- results ----------
+let currentInputs = null;
+function compute() {
+  const u = readInputs();
+  currentInputs = u;
+  const P = makeParams(u);
+  const run = simulate(P, u.cycles);
+  const s = summarize(P, run);
+  drawTimePlot(u, run, s);
+  const fTxt = u.f >= 1e6 ? `${+(u.f / 1e6).toPrecision(3)} MHz` : `${+(u.f / 1e3).toPrecision(3)} kHz`;
+  $('cap1').innerHTML = `<b>Figure 1.</b> Radius of a ${+(u.R0 * 1e6).toPrecision(3)} µm bubble in water driven at ${fTxt} with ${+(u.pA / 1e3).toPrecision(4)} kPa (${u.model === 'KM' ? 'Keller-Miksis' : 'Rayleigh-Plesset'}, ${u.kappa === 1 ? 'isothermal' : 'adiabatic'} gas). Top: radius relative to the starting radius; dotted line at 1, dashed line at 2. Bottom: sound pressure.`;
+  const f0 = naturalFrequency(u.R0, u);
+  const Rres = resonantRadius(u.f, u);
+  const bl = blake(u.R0, Object.assign({}, u, { kappa: 1 }));
+  const inertial = s.rmax >= 2 || run.stopped === 'unbounded growth';
+  const rows = [
+    ['Linear resonance frequency of this bubble', `${fmt(f0 / 1e3, 4)} kHz`],
+    ['Bubble radius in resonance at this frequency', `${fmt(Rres * 1e6, 3)} µm`],
+    ['Static Blake threshold for this bubble', `${fmt(bl.pA / 1e3, 4)} kPa`],
+    ['Largest radius', `${fmt(s.rmax, 3)} R₀`],
+    ['Smallest radius after the first expansion', !isFinite(s.rmin) ? 'no collapse' : s.stillShrinking ? `${fmt(s.rmin, 3)} R₀, still shrinking when the run ends` : `${fmt(s.rmin, 3)} R₀`],
+    ['Highest wall speed', `${fmt(s.speed, 3)} m/s (Mach ${fmt(s.mach, 2)})`],
+    ['Inertial cavitation (R reaches 2 R₀)', inertial ? 'yes' : 'no'],
+  ];
+  $('results').innerHTML = rows.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+  const notes = [];
+  if (run.stopped === 'unbounded growth') notes.push('The bubble grew to more than 1000 times its starting radius, and the calculation stopped there. This is unbounded growth: the sound has pulled the bubble past its Blake threshold.');
+  else if (run.stopped) notes.push(`The calculation stopped early (${run.stopped}).`);
+  if (u.model === 'RP' && s.mach > 0.3) notes.push('Note: the Rayleigh-Plesset equation treats the liquid as incompressible, so it greatly overestimates the violence of the collapse. Use Keller-Miksis for collapses like this one.');
+  else if (s.mach > 1) notes.push('Note: during the collapse the wall moves faster than sound in the liquid. That is outside the range of the Keller-Miksis equation, so the details of the collapse are only rough.');
+  else if (s.mach > 0.3) notes.push('Note: during the collapse the wall reaches a large fraction of the speed of sound. The Keller-Miksis equation is only first order in the Mach number, so the details of the collapse are rough.');
+  if (u.pA > bl.pA && u.f < f0 / 10) notes.push('The sound pressure is above the static Blake threshold and the sound is slow compared with the bubble\'s own oscillation, so the bubble grows far past its critical radius of ' + fmt(bl.Rc * 1e6, 3) + ' µm.');
+  notes.push(`The Blake threshold assumes isothermal gas and slow driving. ${run.steps} time steps.`);
+  $('notes').innerHTML = notes.map((n) => `<p>${n}</p>`).join('');
+  computeThreshold(u);
+}
+
+// ---------- checks against known results ----------
+function runChecks() {
+  const w = { rho: 998.2, sigma: 0.0728, mu: 1.002e-3, pv: 2339, c: 1482, p0: 101325, kappa: 1.4 };
+  const rows = [];
+  // 1. small free oscillation, inviscid Rayleigh-Plesset
+  {
+    const u = Object.assign({}, w, { mu: 0, R0: 3e-6, pA: 0, model: 'RP' });
+    const f0 = naturalFrequency(u.R0, u);
+    const run = simulate(makeParams(Object.assign({}, u, { f: f0 })), 10, { r0: 1.001 });
+    const cr = [];
+    for (let i = 1; i < run.r.length; i++) if (run.r[i - 1] > 1 && run.r[i] <= 1) cr.push(run.tau[i - 1] + (run.tau[i] - run.tau[i - 1]) * (run.r[i - 1] - 1) / (run.r[i - 1] - run.r[i]));
+    rows.push(['Period of a small free oscillation divided by the linear-theory period', '1', fmt((cr[cr.length - 1] - cr[0]) / (cr.length - 1), 7)]);
+  }
+  // 2. Minnaert
+  {
+    const u = Object.assign({}, w, { sigma: 0, pv: 0 });
+    rows.push(['Minnaert constant f₀ R₀ for air in water (no surface tension), m/s', fmt(Math.sqrt(3 * 1.4 * 101325 / 998.2) / (2 * Math.PI), 4), fmt(naturalFrequency(1e-3, u) * 1e-3, 4)]);
+  }
+  // 3. Rayleigh collapse of an almost empty cavity
+  {
+    const R0 = 1e-4, tc = 0.914681 * R0 * Math.sqrt(w.rho / w.p0);
+    const run = simulate(makeParams(Object.assign({}, w, { sigma: 0, mu: 0, pv: 0, R0, pA: 0, model: 'RP', f: 1 / tc, gasScale: 1e-9 })), 1.2, { rtol: 1e-11, atol: 1e-14 });
+    let k = 0; for (let i = 0; i < run.r.length; i++) if (run.r[i] < run.r[k]) k = i;
+    rows.push(['Collapse time of an empty cavity divided by Rayleigh\'s 0.915 R₀ (ρ/p₀)<sup>1/2</sup>', '1', fmt(run.tau[k], 6)]);
+  }
+  // 4. Blake threshold with slow driving
+  {
+    const R0 = 1e-6, wi = Object.assign({}, w, { kappa: 1 });
+    const bl = blake(R0, wi);
+    for (const k of [0.97, 1.03]) {
+      const P = makeParams(Object.assign({}, wi, { R0, f: 2e4, pA: k * bl.pA, model: 'RP' }));
+      const run = simulate(P, 0.5, { rStop: 50 });
+      const s = summarize(P, run);
+      rows.push([`Slow driving at ${k} times the Blake threshold (1 µm bubble, 20 kHz, half a cycle): largest radius`, k < 1 ? `below the critical radius, ${fmt(bl.Rc / R0, 3)} R₀` : `far beyond the critical radius, ${fmt(bl.Rc / R0, 3)} R₀`, run.stopped === 'unbounded growth' ? 'unbounded growth' : `${fmt(s.rmax, 3)} R₀`]);
+    }
+  }
+  // 5. Keller-Miksis approaches Rayleigh-Plesset for a very large speed of sound
+  {
+    const base = Object.assign({}, w, { R0: 5e-6, f: 4e4, pA: 1.5e5 });
+    const a = summarize(makeParams(base), simulate(makeParams(Object.assign({}, base, { model: 'RP' })), 1));
+    const b = summarize(makeParams(base), simulate(makeParams(Object.assign({}, base, { model: 'KM', c: 1e9 })), 1));
+    rows.push(['Largest radius in the first cycle, Keller-Miksis with c = 10⁹ m/s divided by Rayleigh-Plesset', '1', fmt(b.rmax / a.rmax, 7)]);
+  }
+  $('checks').innerHTML = '<tr><th>Check</th><th>Expected</th><th>This program</th></tr>' + rows.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+}
+
+// ---------- events ----------
+for (const [k, v] of Object.entries(EXAMPLES)) {
+  const o = document.createElement('option'); o.value = k; o.textContent = v.label; $('ex').appendChild(o);
+}
+$('ex').value = 'mega';
+setWater();
+setExample('mega');
+$('ex').addEventListener('change', () => { setExample($('ex').value); compute(); });
+['R0', 'f', 'pA', 'cycles', 'rho', 'sigma', 'mu', 'pv', 'c', 'p0'].forEach((id) => $(id).addEventListener('change', () => { $('ex').value = 'custom'; compute(); }));
+['model', 'kappa'].forEach((id) => $(id).addEventListener('change', compute));
+$('water').addEventListener('click', () => { setWater(); compute(); });
+$('form').addEventListener('submit', (ev) => { ev.preventDefault(); compute(); });
+
+compute();
+setTimeout(runChecks, 50);
+})();
+</script>
+</body>
+</html>
