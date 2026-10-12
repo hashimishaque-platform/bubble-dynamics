@@ -3,7 +3,7 @@ bubble_dynamics.py
 ==================
 
 Acoustic cavitation of a single spherical gas bubble in an ultrasonic or
-megasonic field: Rayleigh–Plesset / Keller–Miksis dynamics, the Blake
+megasonic field: Rayleigh-Plesset / Keller-Miksis dynamics, the Blake
 threshold, and maps of where cavitation stays gentle (stable) and where it
 turns damaging (inertial / transient).
 
@@ -13,12 +13,12 @@ A bubble of equilibrium radius R0 sits in a liquid whose far-field pressure is
 
     p_inf(t) = p0 - Pa * sin(2*pi*f*t)            (rarefaction half-cycle first)
 
-Keller–Miksis equation (first-order liquid compressibility; Keller & Miksis 1980):
+Keller-Miksis equation (first-order liquid compressibility; Keller & Miksis 1980):
 
     (1 - U/c) R R'' + 3/2 (1 - U/(3c)) U^2
           = (1 + U/c) (p_B - p_inf)/rho + R/(rho c) * d p_B/dt ,     U = R'
 
-Rayleigh–Plesset equation (incompressible limit c -> infinity):
+Rayleigh-Plesset equation (incompressible limit c -> infinity):
 
     R R'' + 3/2 U^2 = (p_B - p_inf)/rho
 
@@ -31,12 +31,12 @@ Gas content: polytropic with a van der Waals hard core h = R0/8.86 (air),
     p_g = p_g0 * [(R0^3 - h^3)/(R^3 - h^3)]^kappa ,   p_g0 = p0 - p_v + 2 sigma/R0
 
 Thermal behaviour of the gas (`thermal=` option):
-  * "prosperetti" (default) – effective polytropic exponent kappa(R0, f) and
+  * "prosperetti" (default): effective polytropic exponent kappa(R0, f) and
     thermal-damping viscosity mu_th(R0, f) from linear theory
     (Prosperetti, Crum & Commander, JASA 83, 502, 1988). Small, slow bubbles
     behave isothermally (kappa -> 1), large/fast ones adiabatically (kappa -> gamma).
-  * "adiabatic"  – kappa = gamma, mu_th = 0
-  * "isothermal" – kappa = 1,     mu_th = 0
+  * "adiabatic":   kappa = gamma, mu_th = 0
+  * "isothermal":  kappa = 1,     mu_th = 0
 
 Thresholds and criteria
 -----------------------
@@ -47,8 +47,8 @@ Blake threshold (static, isothermal; Blake 1949, see Leighton 1994 / Brennen 199
 It is frequency-independent; it is the true threshold only when the drive is
 slow compared with the bubble's own response (f << f_res).
 
-Dynamic (inertial-cavitation) threshold: the bubble is classed as inertial –
-violent, damaging collapse – when it expands to at least twice its equilibrium
+Dynamic (inertial-cavitation) threshold: the bubble is classed as inertial (a
+violent, damaging collapse) when it expands to at least twice its equilibrium
 radius during the simulated cycles, R_max/R0 >= 2 (Flynn 1975; Apfel 1981).
 
 Linear natural (resonance) frequency, surface tension included:
@@ -165,7 +165,7 @@ AIR = Gas()
 class Settings:
     """Physical model choices."""
 
-    model: str = "KM"  # "KM" (Keller–Miksis) or "RP" (Rayleigh–Plesset)
+    model: str = "KM"  # "KM" (Keller-Miksis) or "RP" (Rayleigh-Plesset)
     thermal: str = "prosperetti"  # "prosperetti", "adiabatic" or "isothermal"
     p0: float = P_ATM  # static (ambient) pressure, Pa
     liquid: Liquid = field(default_factory=lambda: WATER_20C)
@@ -335,13 +335,13 @@ def _accel(tau, x, u, P):
     pg = P[6] * ((R0 * R0 * R0 - h3) / D) ** kap
     pinf = P[5] - P[10] * math.sin(TWO_PI * tau)
     pB = pg + P[4] - 2.0 * sig / R - 4.0 * mu * U / R
-    if P[12] > 0.5:  # Keller–Miksis
+    if P[12] > 0.5:  # Keller-Miksis
         dpg = -3.0 * kap * pg * R * R * U / D
         num = ((1.0 + U / c) * (pB - pinf) / rho
                + R / (rho * c) * (dpg + 2.0 * sig * U / (R * R) + 4.0 * mu * U * U / (R * R))
                - 1.5 * (1.0 - U / (3.0 * c)) * U * U)
         acc = num / ((1.0 - U / c) * R + 4.0 * mu / (rho * c))
-    else:  # Rayleigh–Plesset
+    else:  # Rayleigh-Plesset
         acc = ((pB - pinf) / rho - 1.5 * U * U) / R
     return acc / (R0 * f * f)
 
@@ -372,7 +372,7 @@ def _accel_jac(tau, x, u, P):
     dpg_dR = -3.0 * kap * pg * R * R / D
     dpB_dR = dpg_dR + 2.0 * sig / (R * R) + 4.0 * mu * U / (R * R)
     dpB_dU = -4.0 * mu / R
-    if P[12] > 0.5:  # Keller–Miksis
+    if P[12] > 0.5:  # Keller-Miksis
         dpg = dpg_dR * U  # = dp_g/dt
         Q = dpg + 2.0 * sig * U / (R * R) + 4.0 * mu * U * U / (R * R)
         num = ((1.0 + U / c) * (pB - pinf) / rho + R * Q / (rho * c)
@@ -388,7 +388,7 @@ def _accel_jac(tau, x, u, P):
         dacc_dR = (dnum_dR - acc * (1.0 - U / c)) / den
         dacc_dU = (dnum_dU + acc * R / c) / den
         dacc_dtau = -(1.0 + U / c) * dpinf / rho / den
-    else:  # Rayleigh–Plesset
+    else:  # Rayleigh-Plesset
         acc = ((pB - pinf) / rho - 1.5 * U * U) / R
         dacc_dR = dpB_dR / (rho * R) - acc / R
         dacc_dU = (dpB_dU / rho - 3.0 * U) / R
@@ -744,7 +744,7 @@ def inertial_threshold(R0: float, f: float, s: Settings = DEFAULT, cycles=10.0,
 
 
 # ---------------------------------------------------------------------------
-# Figure (matplotlib) — same encoding as the web app
+# Figure (matplotlib), same encoding as the web app
 # ---------------------------------------------------------------------------
 #: R_max/R0 bin edges and colours: blue arm = stable/gentle, red arm = inertial/damaging.
 REGIME_EDGES = [1.0, 1.01, 1.03, 1.1, 1.3, 2.0, 3.0, 5.0, 10.0, 20.0, np.inf]
@@ -806,8 +806,8 @@ def _halo_line(ax, x, y, style, label=None, lw=1.6):
 
 def plot_overview(path="bubble_regime_maps.png", freqs=(40e3, 1e6), R0_fmap=1e-6,
                   s: Settings = DEFAULT, cycles=10.0, n_r=72, n_p=60, n_f=60, points=None, dpi=160):
-    """Four-panel figure: two size–pressure regime maps, a frequency–pressure map
-    and example radius–time curves. Returns the computed data."""
+    """Four-panel figure: two size-pressure regime maps, a frequency-pressure map
+    and example radius-time curves. Returns the computed data."""
     import matplotlib
 
     matplotlib.use("Agg")
@@ -833,7 +833,7 @@ def plot_overview(path="bubble_regime_maps.png", freqs=(40e3, 1e6), R0_fmap=1e-6
     fig.suptitle("Where acoustic cavitation stays gentle and where it turns damaging", x=0.07, ha="left",
                  fontsize=15, fontweight="bold", color=_INK["primary"], y=0.975)
     liq = s.liquid
-    fig.text(0.07, 0.938, f"{'Keller–Miksis' if s.model.upper()=='KM' else 'Rayleigh–Plesset'} bubble, "
+    fig.text(0.07, 0.938, f"{'Keller-Miksis' if s.model.upper()=='KM' else 'Rayleigh-Plesset'} bubble, "
              f"air in {liq.name.lower()}, p0 = {s.p0/1e5:.3g} bar, {cycles:g} acoustic cycles from rest; "
              "colour = largest expansion R_max/R0 (inertial when ≥ 2)", fontsize=9.5, color=_INK["secondary"])
 
@@ -879,7 +879,7 @@ def plot_overview(path="bubble_regime_maps.png", freqs=(40e3, 1e6), R0_fmap=1e-6
                 fontsize=8, color=_INK["primary"], arrowprops=dict(arrowstyle="-", color=_INK["primary"], lw=0.8),
                 bbox=dict(boxstyle="round,pad=0.25", fc=_INK["surface"], ec="none", alpha=0.9))
 
-    # c: frequency–pressure map
+    # c: frequency-pressure map
     ax = axs[2]
     _heat(ax, fs, Pas, fmap["Rmax_ratio"], plt)
     ax.contour(fs, Pas, np.log(np.clip(fmap["Rmax_ratio"], 1, 1e6)), levels=[math.log(INERTIAL_RATIO)],
