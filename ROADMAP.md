@@ -4,7 +4,8 @@ Each step is developed on its own branch and merged into `main` once `node check
 A step is ticked here with the date it was merged.
 
 ## Thermal model in the page
-- [ ] Port the effective polytropic exponent and thermal damping (Prosperetti) from `python/` to `bubble.js` as a third gas option, with a check against the Python values at three sizes and frequencies.
+- [x] Port the effective polytropic exponent and thermal damping (Prosperetti) from `python/` to `bubble.js` as a third gas option, with a check against the Python values at three sizes and frequencies. (2026-10-17)
+  The thermal diffusivity of air is now 2.074e-5 m²/s at 20 °C (Çengel and Cimbala, Table A-9) in both models; the Python model used 2.15e-5 without a source.
 - [ ] Use it in the threshold figure and describe it under Model.
 
 ## Liquids
