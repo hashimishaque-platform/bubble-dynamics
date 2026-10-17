@@ -92,7 +92,7 @@ research centre, were used.
         <legend>Model</legend>
         <table class="form">
           <tr><td><label for="model">Equation</label></td><td><select id="model"><option value="KM">Keller-Miksis</option><option value="RP">Rayleigh-Plesset</option></select></td></tr>
-          <tr><td><label for="kappa">Gas</label></td><td><select id="kappa"><option value="1.4">adiabatic (κ = 1.4)</option><option value="1">isothermal (κ = 1)</option></select></td></tr>
+          <tr><td><label for="kappa">Gas</label></td><td><select id="kappa"><option value="1.4">adiabatic (κ = 1.4)</option><option value="1">isothermal (κ = 1)</option><option value="thermal">with heat exchange (Prosperetti)</option></select></td></tr>
         </table>
       </fieldset>
 
@@ -174,9 +174,11 @@ p_A,Blake = p0 − p_v + 4σ / (3 R_c)                 sound amplitude needed</p
 <ul>
 <li>One spherical bubble in an unbounded liquid. Near a wall, for example a wafer, a collapsing
 bubble becomes non-spherical and can form a liquid jet. That is not modelled.</li>
-<li>The gas follows a simple polytropic law. There is no heat exchange with the liquid, and no gas
-diffusion into or out of the bubble, so slow growth over many cycles (rectified diffusion) is
-missing.</li>
+<li>The gas follows a polytropic law. With the option "with heat exchange", the exponent κ and an
+extra thermal damping come from the linear theory of Prosperetti, Crum and Commander (1988) for
+the chosen radius and frequency. That theory holds for small oscillations, so in a violent
+collapse it is only a rough guide. There is no gas diffusion into or out of the bubble, so slow
+growth over many cycles (rectified diffusion) is missing.</li>
 <li>The Keller-Miksis equation is first order in the Mach number Ṙ/c. When the wall speed during
 a collapse comes close to the speed of sound, the details of the collapse are rough.</li>
 <li>The liquid properties are constant and the sound field is a pure sine wave.</li>
@@ -189,10 +191,12 @@ a collapse comes close to the speed of sound, the details of the collapse are ro
 <li>Plesset, M. S. The dynamics of cavitation bubbles. <i>J. Appl. Mech.</i> 16 (1949) 277 to 282.</li>
 <li>Blake, F. G. The onset of cavitation in liquids. Technical Memo 12, Acoustics Research Laboratory, Harvard University, 1949.</li>
 <li>Keller, J. B.; Miksis, M. Bubble oscillations of large amplitude. <i>J. Acoust. Soc. Am.</i> 68 (1980) 628 to 633. <a href="https://doi.org/10.1121/1.384720" target="_blank" rel="noopener">doi:10.1121/1.384720</a></li>
+<li>Prosperetti, A.; Crum, L. A.; Commander, K. W. Nonlinear bubble dynamics. <i>J. Acoust. Soc. Am.</i> 83 (1988) 502 to 514. <a href="https://doi.org/10.1121/1.396145" target="_blank" rel="noopener">doi:10.1121/1.396145</a></li>
 <li>Dormand, J. R.; Prince, P. J. A family of embedded Runge-Kutta formulae. <i>J. Comput. Appl. Math.</i> 6 (1980) 19 to 26.</li>
 <li>Leighton, T. G. <i>The Acoustic Bubble.</i> Academic Press, 1994.</li>
 <li>Brennen, C. E. <i>Cavitation and Bubble Dynamics.</i> Oxford University Press, 1995.</li>
 <li>Lauterborn, W.; Kurz, T. Physics of bubble oscillations. <i>Rep. Prog. Phys.</i> 73 (2010) 106501.</li>
+<li>Çengel, Y. A.; Cimbala, J. M. Table A-9, Properties of air at 1 atm pressure (thermal diffusivity of air at 20 °C, 2.074 × 10<sup>−5</sup> m²/s). <a href="https://www.me.psu.edu/cimbala/me420/Links/Table_A_9_CC_Properties_of_Air.pdf" target="_blank" rel="noopener">PDF</a></li>
 </ol>
 
 <hr>
@@ -242,7 +246,8 @@ function readInputs() {
     pA: clamp(num('pA', 100), 0, 5000) * 1e3,
     cycles: clamp(num('cycles', 5), 0.5, 40),
     model: $('model').value,
-    kappa: parseFloat($('kappa').value),
+    thermal: $('kappa').value === 'thermal',
+    kappa: $('kappa').value === 'thermal' ? 1.4 : parseFloat($('kappa').value),
     rho: clamp(num('rho', WATER.rho), 100, 20000),
     sigma: clamp(num('sigma', WATER.sigma), 0.1, 1000) * 1e-3,
     mu: clamp(num('mu', WATER.mu), 0.001, 10000) * 1e-3,
@@ -402,7 +407,7 @@ function drawThresholdPlot(u) {
   }
 }
 
-function fig2Key(u) { return [u.f, u.cycles, u.model, u.kappa, u.rho, u.sigma, u.mu, u.pv, u.c, u.p0].join('|'); }
+function fig2Key(u) { return [u.f, u.cycles, u.model, u.kappa, u.thermal, u.rho, u.sigma, u.mu, u.pv, u.c, u.p0].join('|'); }
 
 function computeThreshold(u) {
   const key = fig2Key(u);
@@ -444,13 +449,14 @@ function compute() {
   const s = summarize(P, run);
   drawTimePlot(u, run, s);
   const fTxt = u.f >= 1e6 ? `${+(u.f / 1e6).toPrecision(3)} MHz` : `${+(u.f / 1e3).toPrecision(3)} kHz`;
-  $('cap1').innerHTML = `<b>Figure 1.</b> Radius of a ${+(u.R0 * 1e6).toPrecision(3)} µm bubble in water driven at ${fTxt} with ${+(u.pA / 1e3).toPrecision(4)} kPa (${u.model === 'KM' ? 'Keller-Miksis' : 'Rayleigh-Plesset'}, ${u.kappa === 1 ? 'isothermal' : 'adiabatic'} gas). Top: radius relative to the starting radius; dotted line at 1, dashed line at 2. Bottom: sound pressure.`;
+  $('cap1').innerHTML = `<b>Figure 1.</b> Radius of a ${+(u.R0 * 1e6).toPrecision(3)} µm bubble in water driven at ${fTxt} with ${+(u.pA / 1e3).toPrecision(4)} kPa (${u.model === 'KM' ? 'Keller-Miksis' : 'Rayleigh-Plesset'}, ${u.thermal ? 'gas with heat exchange' : u.kappa === 1 ? 'isothermal gas' : 'adiabatic gas'}). Top: radius relative to the starting radius; dotted line at 1, dashed line at 2. Bottom: sound pressure.`;
   const f0 = naturalFrequency(u.R0, u);
   const Rres = resonantRadius(u.f, u);
   const bl = blake(u.R0, Object.assign({}, u, { kappa: 1 }));
   const inertial = s.rmax >= 2 || run.stopped === 'unbounded growth';
   const rows = [
     ['Linear resonance frequency of this bubble', `${fmt(f0 / 1e3, 4)} kHz`],
+    ...(u.thermal ? [['Effective polytropic exponent κ at this frequency', fmt(P.kappa, 4)], ['Thermal damping viscosity μ<sub>th</sub>', `${fmt(P.muTh * 1e3, 3)} mPa s`]] : []),
     ['Bubble radius in resonance at this frequency', `${fmt(Rres * 1e6, 3)} µm`],
     ['Static Blake threshold for this bubble', `${fmt(bl.pA / 1e3, 4)} kPa`],
     ['Largest radius', `${fmt(s.rmax, 3)} R₀`],
@@ -472,6 +478,8 @@ function compute() {
 }
 
 // ---------- checks against known results ----------
+// kappa and mu_th (Pa s) from python/bubble_dynamics.py thermal_parameters(R0, f) for water at 20 C
+const THERMAL_REF = [[1e-6, 1e6, 1.000788058, 4.091616415e-4], [50e-6, 20e3, 1.135520478, 7.836750135e-2], [500e-6, 10e3, 1.357094000, 4.557023814e-2]];
 function runChecks() {
   const w = { rho: 998.2, sigma: 0.0728, mu: 1.002e-3, pv: 2339, c: 1482, p0: 101325, kappa: 1.4 };
   const rows = [];
@@ -513,6 +521,11 @@ function runChecks() {
     const a = summarize(makeParams(base), simulate(makeParams(Object.assign({}, base, { model: 'RP' })), 1));
     const b = summarize(makeParams(base), simulate(makeParams(Object.assign({}, base, { model: 'KM', c: 1e9 })), 1));
     rows.push(['Largest radius in the first cycle, Keller-Miksis with c = 10⁹ m/s divided by Rayleigh-Plesset', '1', fmt(b.rmax / a.rmax, 7)]);
+  }
+  // 6. thermal model against the Python model (python/bubble_dynamics.py, thermal_parameters)
+  for (const [R0, f, k, m] of THERMAL_REF) {
+    const t = thermalParams(R0, f, w);
+    rows.push([`Heat exchange, ${R0 * 1e6} µm bubble at ${f >= 1e6 ? f / 1e6 + ' MHz' : f / 1e3 + ' kHz'}: κ and μ<sub>th</sub> (mPa s), Python model`, `${fmt(k, 7)}, ${fmt(m * 1e3, 7)}`, `${fmt(t.kappa, 7)}, ${fmt(t.muTh * 1e3, 7)}`]);
   }
   $('checks').innerHTML = '<tr><th>Check</th><th>Expected</th><th>This program</th></tr>' + rows.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
 }
