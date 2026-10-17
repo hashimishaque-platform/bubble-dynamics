@@ -43,6 +43,15 @@ const fmt = (x, d) => Number(x).toPrecision(d);
   const b = B.summarize(B.makeParams(base), B.simulate(B.makeParams(Object.assign({}, base, { model: 'KM', c: 1e9 })), 1));
   rows.push(['Largest radius, Keller-Miksis with c = 1e9 m/s / Rayleigh-Plesset', '1', fmt(b.rmax / a.rmax, 7)]);
 }
+// 6. thermal model against the Python model (python/bubble_dynamics.py, thermal_parameters), water at 20 C
+{
+  const ref = [[1e-6, 1e6, 1.000788058, 4.091616415e-4], [50e-6, 20e3, 1.135520478, 7.836750135e-2], [500e-6, 10e3, 1.357094000, 4.557023814e-2]];
+  for (const [R0, f, k, m] of ref) {
+    const t = B.thermalParams(R0, f, w);
+    rows.push([`Heat exchange, R0 = ${R0 * 1e6} um, f = ${f / 1e3} kHz: kappa, mu_th (mPa s) vs Python`, `${fmt(k, 7)}, ${fmt(m * 1e3, 7)}`, `${fmt(t.kappa, 7)}, ${fmt(t.muTh * 1e3, 7)}`]);
+    if (Math.abs(t.kappa / k - 1) > 1e-7 || Math.abs(t.muTh / m - 1) > 1e-7) { console.error('thermal model differs from the Python model'); process.exitCode = 1; }
+  }
+}
 const wid = Math.max(...rows.map((r) => r[0].length));
 console.log('Check'.padEnd(wid), '| Expected       | This program');
 for (const r of rows) console.log(r[0].padEnd(wid), '|', r[1].padEnd(14), '|', r[2]);

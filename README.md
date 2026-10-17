@@ -19,6 +19,9 @@ analytical results. No measured data, and no data from any research centre, were
 - Solves the Keller-Miksis equation (the Rayleigh-Plesset equation with a correction for the
   compressibility of the liquid) with surface tension, viscosity, vapour pressure and a polytropic
   gas, using an adaptive Dormand-Prince Runge-Kutta method.
+- The gas can be adiabatic, isothermal, or exchange heat with the liquid. The last option takes an
+  effective polytropic exponent and a thermal damping from the linear theory of Prosperetti, Crum
+  and Commander (1988), for the chosen bubble size and frequency.
 - Shows the bubble radius and the sound pressure against time.
 - Maps, for bubbles of different sizes, the sound pressure at which a bubble first grows to twice
   its starting radius (a common rule of thumb for inertial cavitation), next to the static Blake
@@ -69,7 +72,7 @@ same bubble reaches only 1.87 times. Its result agrees with SciPy's Radau solver
 ## Limitations
 
 - One spherical bubble in an unbounded liquid; no jets near walls.
-- Polytropic gas, no heat or gas exchange with the liquid, so no rectified diffusion.
+- Heat exchange only through linear theory, and no gas exchange with the liquid, so no rectified diffusion.
 - The Keller-Miksis equation is first order in the Mach number of the wall.
 
 ## References
