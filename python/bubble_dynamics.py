@@ -153,7 +153,7 @@ class Gas:
 
     name: str = "Air"
     gamma: float = 1.4  # ratio of specific heats
-    D_ref: float = 2.15e-5  # thermal diffusivity at p_ref, m^2/s
+    D_ref: float = 2.074e-5  # thermal diffusivity of air at p_ref and 20 C, m^2/s (Cengel & Cimbala, Table A-9)
     p_ref: float = P_ATM
     hard_core_ratio: float = 8.86  # R0/h for the van der Waals hard core
 

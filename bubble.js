@@ -1,5 +1,7 @@
 // Single spherical gas bubble in a sound field.
 // Rayleigh-Plesset or Keller-Miksis equation, polytropic gas, surface tension, viscosity, vapour pressure.
+// Optional heat exchange between gas and liquid through the linear thermal model of
+// Prosperetti, Crum and Commander (1988): an effective polytropic exponent and a thermal damping.
 // Theoretical model only: built from published equations, no measured data and no data from any research centre.
 // Pure functions, no DOM. SI units inside.
 
@@ -29,12 +31,54 @@ function accel(t, R, V, P) {
   return rhs / lhs;
 }
 
+// Air in the bubble: ratio of specific heats, and thermal diffusivity at 1 atm and 20 C
+// (Cengel and Cimbala, Table A-9, 2.074e-5 m^2/s). The diffusivity scales with 1/density.
+const AIR = { gamma: 1.4, D: 2.074e-5, pRef: 101325 };
+
+// z coth(z) - 1 for complex z = [re, im] with Re z > 0. Series for small |z|.
+function zcothzMinus1(re, im) {
+  const mul = (a, b) => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+  const div = (a, b) => { const d = b[0] * b[0] + b[1] * b[1]; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; };
+  const z = [re, im];
+  if (Math.hypot(re, im) < 0.1) {
+    const z2 = mul(z, z), z4 = mul(z2, z2), z6 = mul(z4, z2), z8 = mul(z4, z4);
+    return [z2[0] / 3 - z4[0] / 45 + 2 * z6[0] / 945 - z8[0] / 4725, z2[1] / 3 - z4[1] / 45 + 2 * z6[1] / 945 - z8[1] / 4725];
+  }
+  const m = Math.exp(-2 * re), e = [m * Math.cos(-2 * im), m * Math.sin(-2 * im)];   // exp(-2z)
+  const q = mul(z, div([1 + e[0], e[1]], [1 - e[0], -e[1]]));
+  return [q[0] - 1, q[1]];
+}
+
+// Effective polytropic exponent and thermal-damping viscosity for a bubble of radius R0 driven at f
+// (linear theory, Prosperetti, Crum and Commander 1988):
+//   Phi = 3 gamma / (1 - 3 (gamma - 1) i chi [ (i/chi)^(1/2) coth (i/chi)^(1/2) - 1 ]),  chi = D / (omega R0^2)
+//   kappa = Re(Phi) / 3,   mu_th = p_g0 Im(Phi) / (4 omega)
+function thermalParams(R0, f, u) {
+  const g = AIR.gamma, omega = 2 * Math.PI * f;
+  const pg0 = u.p0 + 2 * u.sigma / R0 - u.pv;
+  const D = AIR.D * AIR.pRef / (u.p0 + 2 * u.sigma / R0);   // gas density follows the total pressure inside
+  const chi = D / (omega * R0 * R0);
+  const a = 1 / Math.sqrt(2 * chi);                           // (i/chi)^(1/2) = a (1 + i)
+  const w = zcothzMinus1(a, a);
+  // denominator 1 - 3 (g - 1) i chi w
+  const k = 3 * (g - 1) * chi;
+  const den = [1 + k * w[1], -k * w[0]];
+  const d2 = den[0] * den[0] + den[1] * den[1];
+  const phi = [3 * g * den[0] / d2, -3 * g * den[1] / d2];
+  return { kappa: phi[0] / 3, muTh: pg0 * phi[1] / (4 * omega) };
+}
+
 // Build a parameter object from user units. Everything SI afterwards.
+// u.thermal = true replaces kappa by the effective exponent and adds the thermal damping to the viscosity.
 function makeParams(u) {
   const P = {
     rho: u.rho, sigma: u.sigma, mu: u.mu, pv: u.pv, c: u.c, p0: u.p0,
     R0: u.R0, kappa: u.kappa, f: u.f, pA: u.pA, model: u.model || 'KM',
   };
+  if (u.thermal) {
+    const th = thermalParams(u.R0, u.f, u);
+    P.kappa = th.kappa; P.mu = u.mu + th.muTh; P.muTh = th.muTh;
+  }
   P.pg0 = (u.gasScale === undefined ? 1 : u.gasScale) * (P.p0 + 2 * P.sigma / P.R0 - P.pv);  // equilibrium gas pressure
   return P;
 }
@@ -120,19 +164,32 @@ function summarize(P, run) {
 }
 
 // Linear (small-amplitude) natural frequency in Hz, inviscid.
-function naturalFrequency(R0, u) {
+// With u.thermal the exponent depends on frequency: it is taken at fDrive if given,
+// otherwise the frequency is found self-consistently, f = f0(kappa(f)), starting from the isothermal value.
+function naturalFrequency(R0, u, fDrive) {
   const pg0 = u.p0 + 2 * u.sigma / R0 - u.pv;
-  const w2 = (3 * u.kappa * pg0 - 2 * u.sigma / R0) / (u.rho * R0 * R0);
-  return w2 > 0 ? Math.sqrt(w2) / (2 * Math.PI) : NaN;
+  const f0 = (kappa) => {
+    const w2 = (3 * kappa * pg0 - 2 * u.sigma / R0) / (u.rho * R0 * R0);
+    return w2 > 0 ? Math.sqrt(w2) / (2 * Math.PI) : NaN;
+  };
+  if (!u.thermal) return f0(u.kappa);
+  if (fDrive) return f0(thermalParams(R0, fDrive, u).kappa);
+  let f = f0(1);
+  for (let i = 0; i < 60 && isFinite(f); i++) {
+    const fn = f0(thermalParams(R0, f, u).kappa);
+    if (Math.abs(fn - f) < 1e-10 * f) return fn;
+    f = fn;
+  }
+  return f;
 }
 
 // Radius whose linear natural frequency equals f (bisection on a log scale).
 function resonantRadius(f, u) {
   let lo = 1e-8, hi = 1e-2;
-  if (!(naturalFrequency(lo, u) > f && naturalFrequency(hi, u) < f)) return NaN;
+  if (!(naturalFrequency(lo, u, f) > f && naturalFrequency(hi, u, f) < f)) return NaN;
   for (let i = 0; i < 100; i++) {
     const m = Math.sqrt(lo * hi);
-    if (naturalFrequency(m, u) > f) lo = m; else hi = m;
+    if (naturalFrequency(m, u, f) > f) lo = m; else hi = m;
   }
   return Math.sqrt(lo * hi);
 }
@@ -165,5 +222,5 @@ function dynamicThreshold(R0, u, cycles) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { wallPressure, pInf, accel, makeParams, simulate, summarize, naturalFrequency, resonantRadius, blake, dynamicThreshold };
+  module.exports = { AIR, thermalParams, wallPressure, pInf, accel, makeParams, simulate, summarize, naturalFrequency, resonantRadius, blake, dynamicThreshold };
 }
