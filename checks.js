@@ -52,6 +52,28 @@ const fmt = (x, d) => Number(x).toPrecision(d);
     if (Math.abs(t.kappa / k - 1) > 1e-7 || Math.abs(t.muTh / m - 1) > 1e-7) { console.error('thermal model differs from the Python model'); process.exitCode = 1; }
   }
 }
+// 7. limits of the effective exponent: isothermal for a small bubble and slow sound, adiabatic for a large bubble and fast sound
+{
+  const a = B.thermalParams(0.1e-6, 1e3, w).kappa, b = B.thermalParams(1e-3, 1e6, w).kappa;
+  rows.push(['Heat exchange limits: kappa for 0.1 um at 1 kHz, and for 1 mm at 1 MHz', '1, close to 1.4', `${fmt(a, 7)}, ${fmt(b, 4)}`]);
+  if (Math.abs(a - 1) > 1e-6 || Math.abs(b - 1.4) > 0.01) { console.error('thermal limits wrong'); process.exitCode = 1; }
+}
+// 8. the resonant radius with heat exchange lies between the isothermal and the adiabatic one (1 MHz)
+{
+  const f = 1e6;
+  const ri = B.resonantRadius(f, Object.assign({}, w, { kappa: 1 })), ra = B.resonantRadius(f, w), rt = B.resonantRadius(f, Object.assign({}, w, { thermal: true }));
+  rows.push(['Resonant radius at 1 MHz with heat exchange (um)', `between ${fmt(ri * 1e6, 4)} and ${fmt(ra * 1e6, 4)}`, fmt(rt * 1e6, 4)]);
+  if (!(rt > ri && rt < ra)) { console.error('thermal resonant radius out of bounds'); process.exitCode = 1; }
+}
+// 9. the threshold figure uses the heat-exchange model: same result as fixed kappa and mu + mu_th
+{
+  const R0 = 3e-6, f = 1e6, th = B.thermalParams(R0, f, w);
+  const a = B.dynamicThreshold(R0, Object.assign({}, w, { f, thermal: true }), 10);
+  const b = B.dynamicThreshold(R0, Object.assign({}, w, { f, kappa: th.kappa, mu: w.mu + th.muTh }), 10);
+  const c = B.dynamicThreshold(R0, Object.assign({}, w, { f }), 10);
+  rows.push(['Threshold, 3 um at 1 MHz, heat exchange / fixed kappa and mu + mu_th (adiabatic, kPa)', `1 (${fmt(c / 1e3, 4)})`, `${fmt(a / b, 7)} (${fmt(a / 1e3, 4)})`]);
+  if (Math.abs(a / b - 1) > 1e-12 || !(Math.abs(a / c - 1) > 0.01)) { console.error('threshold does not use the thermal model'); process.exitCode = 1; }
+}
 const wid = Math.max(...rows.map((r) => r[0].length));
 console.log('Check'.padEnd(wid), '| Expected       | This program');
 for (const r of rows) console.log(r[0].padEnd(wid), '|', r[1].padEnd(14), '|', r[2]);

@@ -25,7 +25,8 @@ analytical results. No measured data, and no data from any research centre, were
 - Shows the bubble radius and the sound pressure against time.
 - Maps, for bubbles of different sizes, the sound pressure at which a bubble first grows to twice
   its starting radius (a common rule of thumb for inertial cavitation), next to the static Blake
-  threshold.
+  threshold. A second line shows the same threshold for another gas model (with heat exchange,
+  or adiabatic if heat exchange is chosen), so the effect of heat exchange can be seen.
 
 ## Checks
 
@@ -39,6 +40,10 @@ analytical results. No measured data, and no data from any research centre, were
 | Slow driving at 0.97 times the Blake threshold: largest radius | below 2.24 R₀ | 1.81 R₀ |
 | Slow driving at 1.03 times the Blake threshold: largest radius | far beyond 2.24 R₀ | 31.4 R₀ |
 | Keller-Miksis with c = 10⁹ m/s divided by Rayleigh-Plesset, largest radius | 1 | 1.000000 |
+| Heat exchange: κ, μ<sub>th</sub> against the Python model at three sizes and frequencies | equal | equal to 7 digits |
+| Heat exchange limits: κ for 0.1 µm at 1 kHz, and for 1 mm at 1 MHz | 1, close to 1.4 | 1.000000, 1.398 |
+| Resonant radius at 1 MHz with heat exchange (µm) | between 3.144 and 3.707 | 3.184 |
+| Threshold of a 3 µm bubble at 1 MHz with heat exchange, divided by the same with fixed κ and μ + μ<sub>th</sub> | 1 | 1.000000 |
 
 ## Files
 

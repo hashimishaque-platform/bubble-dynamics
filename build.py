@@ -22,7 +22,7 @@ META = {
                     'Keller-Miksis equations, inertial cavitation and Blake threshold.'),
     'image_alt': 'Radius of a 1 µm bubble driven at 1 MHz and 300 kPa against time, with the sound pressure below',
     'keywords': ('bubble dynamics, Rayleigh-Plesset, Keller-Miksis, acoustic cavitation, inertial cavitation, '
-                 'Blake threshold, Minnaert frequency, megasonic cleaning, ultrasonic cleaning, wafer cleaning'),
+                 'Blake threshold, Minnaert frequency, thermal damping, megasonic cleaning, ultrasonic cleaning, wafer cleaning'),
     'languages': ['JavaScript', 'Python'],
     'about': [
         ('Rayleigh-Plesset equation', 'https://en.wikipedia.org/wiki/Rayleigh%E2%80%93Plesset_equation'),

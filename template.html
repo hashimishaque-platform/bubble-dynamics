@@ -146,6 +146,14 @@ dips can appear at radii whose own resonance is a multiple of the driving freque
 dashed line is the static Blake threshold. It is the right limit when the sound is much slower
 than the bubble's own oscillation.
 </p>
+<p>
+Figure 2 also shows the threshold for a second gas model, for comparison: with heat exchange
+(blue) if the form uses adiabatic or isothermal gas, and adiabatic gas (grey) if it uses heat
+exchange. With heat exchange, small bubbles are nearly isothermal. Their gas is softer, so the
+threshold is lower than for adiabatic gas. The resonance moves to a smaller radius, and near
+resonance the thermal damping raises the lowest point of the curve. Each line has 22 points,
+so the narrow dips near resonance are only roughly resolved.
+</p>
 
 <h2>Model</h2>
 <p>Keller-Miksis equation for the bubble radius R(t), with Ṙ = dR/dt:</p>
@@ -165,6 +173,28 @@ of 10<sup>−9</sup>.
 
 R_c = R0 sqrt(3 p_g0 R0 / (2σ))                    critical radius
 p_A,Blake = p0 − p_v + 4σ / (3 R_c)                 sound amplitude needed</pre>
+<p>
+Heat exchange between the gas and the liquid. A small bubble, or a slow sound, leaves time for
+heat to flow between the gas and the liquid, and the gas stays close to the liquid temperature
+(isothermal, κ = 1). A large bubble, or a fast sound, leaves no time, and the gas behaves
+adiabatically (κ = γ = 1.4 for air). In between, part of the work done on the gas is lost as
+heat in every cycle, which damps the oscillation. The linear theory of Prosperetti, Crum and
+Commander (1988) gives both effects through one complex number Φ:
+</p>
+<pre>Φ = 3γ / (1 − 3(γ − 1) i χ [ (i/χ)^(1/2) coth (i/χ)^(1/2) − 1 ])
+χ = D / (ω R0²)                                     ω = 2π f, D = thermal diffusivity of the gas
+
+κ = Re(Φ) / 3                                       effective polytropic exponent
+μ_th = p_g0 Im(Φ) / (4ω)                            thermal damping, added to the viscosity μ</pre>
+<p>
+The diffusivity of air is 2.074 × 10<sup>−5</sup> m²/s at 1 atm and 20 °C (Çengel and
+Cimbala). It is scaled with the inverse of the gas density, so it is taken at the pressure
+inside the bubble, p0 + 2σ/R0. With the option "with heat exchange", κ and μ_th are computed for
+each bubble radius at the chosen frequency, both in Figure 1 and in Figure 2, and the linear
+resonance frequency uses this κ. The factor 4 in μ_th follows from the linear gas pressure,
+p_g ≈ p_g0 (1 − Φ x) for R = R0 (1 + x): its imaginary part acts like a viscous pressure
+4 μ_th Ṙ / R.
+</p>
 
 <h2>Checks</h2>
 <p>These checks run every time the page loads, using the same code as the figures.</p>
@@ -341,7 +371,9 @@ function drawTimePlot(u, run, s) {
 }
 
 // ---------- Figure 2: threshold against bubble radius ----------
-const fig2 = { key: null, Rs: [], th: [], busy: 0 };
+const fig2 = { key: null, Rs: [], th: [], th2: [], busy: 0 };
+// the comparison line: with heat exchange, or adiabatic if heat exchange is already chosen
+const fig2Other = (u) => (u.thermal ? Object.assign({}, u, { thermal: false, kappa: 1.4 }) : Object.assign({}, u, { thermal: true, kappa: 1.4 }));
 function fig2Range(u) {
   const Rres = resonantRadius(u.f, u);
   let hi = isFinite(Rres) ? clamp(4 * Rres, 10e-6, 500e-6) : 100e-6;
@@ -393,6 +425,9 @@ function drawThresholdPlot(u) {
     db += (i ? 'L' : 'M') + xs(R).toFixed(1) + ',' + ys(blake(R, uIso).pA).toFixed(1) + ' ';
   }
   el(g, 'path', { d: db, fill: 'none', stroke: '#000000', 'stroke-width': 1.1, 'stroke-dasharray': '6 4' });
+  // threshold for the other gas model, for comparison
+  const pts2 = fig2.Rs.map((R, i) => [R, fig2.th2[i]]).filter((p) => isFinite(p[1]));
+  if (pts2.length) el(g, 'path', { d: pts2.map((p, i) => (i ? 'L' : 'M') + xs(p[0]).toFixed(1) + ',' + ys(p[1]).toFixed(1)).join(' '), fill: 'none', stroke: u.thermal ? '#777777' : '#0000cc', 'stroke-width': 1.1 });
   // dynamic threshold
   const pts = fig2.Rs.map((R, i) => [R, fig2.th[i]]).filter((p) => isFinite(p[1]));
   if (pts.length) {
@@ -405,6 +440,16 @@ function drawThresholdPlot(u) {
     el(g, 'line', { x1: x - 6, y1: y, x2: x + 6, y2: y, stroke: '#000000', 'stroke-width': 1.6 });
     el(g, 'line', { x1: x, y1: y - 6, x2: x, y2: y + 6, stroke: '#000000', 'stroke-width': 1.6 });
   }
+  // legend, bottom right
+  const gasName = (v) => (v.thermal ? 'gas with heat exchange' : v.kappa === 1 ? 'isothermal gas' : 'adiabatic gas');
+  const leg = [[gasName(u), '#cc0000', 1.6, null], [gasName(fig2Other(u)), u.thermal ? '#777777' : '#0000cc', 1.1, null], ['Blake (static)', '#000000', 1.1, '6 4']];
+  leg.forEach(([name, col, wd, dash], k) => {
+    const y = Y1 - 50 + 17 * k;
+    const a = { x1: X1 - 200, y1: y - 4, x2: X1 - 170, y2: y - 4, stroke: col, 'stroke-width': wd };
+    if (dash) a['stroke-dasharray'] = dash;
+    el(svg, 'line', a);
+    txt(svg, X1 - 164, y, name, { 'font-size': 12 });
+  });
 }
 
 function fig2Key(u) { return [u.f, u.cycles, u.model, u.kappa, u.thermal, u.rho, u.sigma, u.mu, u.pv, u.c, u.p0].join('|'); }
@@ -417,13 +462,14 @@ function computeThreshold(u) {
   fig2.key = rangeKey;
   const job = ++fig2.busy;
   const N = 22;
-  fig2.Rs = []; fig2.th = [];
+  fig2.Rs = []; fig2.th = []; fig2.th2 = [];
+  const uOther = fig2Other(u);
   for (let i = 0; i < N; i++) fig2.Rs.push(lo * Math.pow(hi / lo, i / (N - 1)));
   let i = 0;
   const step = () => {
     if (job !== fig2.busy) return;               // a newer request replaced this one
     const t0 = Date.now();
-    while (i < N && Date.now() - t0 < 40) { fig2.th[i] = dynamicThreshold(fig2.Rs[i], u, u.cycles); i++; }
+    while (i < N && Date.now() - t0 < 40) { fig2.th[i] = dynamicThreshold(fig2.Rs[i], u, u.cycles); fig2.th2[i] = dynamicThreshold(fig2.Rs[i], uOther, u.cycles); i++; }
     drawThresholdPlot(currentInputs);
     updateCaption2(u, i >= N, i, N);
     if (i < N) setTimeout(step, 0);
@@ -434,7 +480,7 @@ function computeThreshold(u) {
 
 function updateCaption2(u, done, i, N) {
   const fTxt = u.f >= 1e6 ? `${+(u.f / 1e6).toPrecision(3)} MHz` : `${+(u.f / 1e3).toPrecision(3)} kHz`;
-  let s = `<b>Figure 2.</b> Sound pressure at which a bubble of radius R₀ first reaches 2 R₀ within ${u.cycles} cycles at ${fTxt} (red, ${u.model === 'KM' ? 'Keller-Miksis' : 'Rayleigh-Plesset'}), and the static Blake threshold (dashed). Above the red line the bubble cavitates inertially. Cross: the case in Figure 1.`;
+  let s = `<b>Figure 2.</b> Sound pressure at which a bubble of radius R₀ first reaches 2 R₀ within ${u.cycles} cycles at ${fTxt} (${u.model === 'KM' ? 'Keller-Miksis' : 'Rayleigh-Plesset'}). Red: the gas model chosen in the form. ${u.thermal ? 'Grey: adiabatic gas, for comparison.' : 'Blue: gas with heat exchange, for comparison.'} Dashed: the static Blake threshold. Above the red line the bubble cavitates inertially. Cross: the case in Figure 1.`;
   if (!done) s += ` <i>Computing, ${i} of ${N} points.</i>`;
   $('cap2').innerHTML = s;
 }
@@ -526,6 +572,25 @@ function runChecks() {
   for (const [R0, f, k, m] of THERMAL_REF) {
     const t = thermalParams(R0, f, w);
     rows.push([`Heat exchange, ${R0 * 1e6} µm bubble at ${f >= 1e6 ? f / 1e6 + ' MHz' : f / 1e3 + ' kHz'}: κ and μ<sub>th</sub> (mPa s), Python model`, `${fmt(k, 7)}, ${fmt(m * 1e3, 7)}`, `${fmt(t.kappa, 7)}, ${fmt(t.muTh * 1e3, 7)}`]);
+  }
+  // 7. limits of the effective exponent
+  {
+    const a = thermalParams(0.1e-6, 1e3, w).kappa, b = thermalParams(1e-3, 1e6, w).kappa;
+    rows.push(['Heat exchange limits: κ for a 0.1 µm bubble at 1 kHz (isothermal), and for a 1 mm bubble at 1 MHz (adiabatic)', '1, close to 1.4', `${fmt(a, 7)}, ${fmt(b, 4)}`]);
+  }
+  // 8. resonant radius with heat exchange between the isothermal and the adiabatic one
+  {
+    const f = 1e6;
+    const ri = resonantRadius(f, Object.assign({}, w, { kappa: 1 })), ra = resonantRadius(f, w), rt = resonantRadius(f, Object.assign({}, w, { thermal: true }));
+    rows.push(['Bubble radius in resonance at 1 MHz with heat exchange', `between ${fmt(ri * 1e6, 4)} µm (isothermal) and ${fmt(ra * 1e6, 4)} µm (adiabatic)`, `${fmt(rt * 1e6, 4)} µm`]);
+  }
+  // 9. the threshold with heat exchange equals the threshold with fixed κ and μ + μ_th
+  {
+    const R0 = 3e-6, f = 1e6, th = thermalParams(R0, f, w);
+    const a = dynamicThreshold(R0, Object.assign({}, w, { f, thermal: true }), 10);
+    const b = dynamicThreshold(R0, Object.assign({}, w, { f, kappa: th.kappa, mu: w.mu + th.muTh }), 10);
+    const c = dynamicThreshold(R0, Object.assign({}, w, { f }), 10);
+    rows.push([`Threshold of a 3 µm bubble at 1 MHz (10 cycles) with heat exchange, divided by the same with fixed κ and μ + μ<sub>th</sub>. In brackets: the threshold, and for adiabatic gas`, `1 (adiabatic: ${fmt(c / 1e3, 4)} kPa)`, `${fmt(a / b, 7)} (${fmt(a / 1e3, 4)} kPa)`]);
   }
   $('checks').innerHTML = '<tr><th>Check</th><th>Expected</th><th>This program</th></tr>' + rows.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
 }
