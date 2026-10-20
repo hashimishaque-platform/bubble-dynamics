@@ -1,5 +1,7 @@
 # Bubble dynamics
 
+[![checks](https://github.com/hashimishaque-platform/bubble-dynamics/actions/workflows/checks.yml/badge.svg)](https://github.com/hashimishaque-platform/bubble-dynamics/actions/workflows/checks.yml)
+
 A single gas bubble in water driven by an ultrasonic or megasonic sound field, as in wafer
 cleaning, computed with the Rayleigh-Plesset and Keller-Miksis equations, with the sound pressure at
 which inertial cavitation starts. It is a single-page browser program with no server and no
@@ -87,6 +89,17 @@ Mech. 16 (1949) 277; Blake (1949); Keller and Miksis, J. Acoust. Soc. Am. 68 (19
 Dormand and Prince, J. Comput. Appl. Math. 6 (1980) 19; Leighton, *The Acoustic Bubble* (1994);
 Brennen, *Cavitation and Bubble Dynamics* (1995); Lauterborn and Kurz, Rep. Prog. Phys. 73
 (2010) 106501.
+
+## How to cite
+
+Use the "Cite this repository" box on the GitHub page, which reads `CITATION.cff`. Each
+release is archived with its own DOI on Zenodo once the archive is switched on for this
+repository. Please give the version you used.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). New models need a source and a check, and the checks
+run on every change.
 
 ## License
 

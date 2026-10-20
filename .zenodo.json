@@ -1,0 +1,19 @@
+{
+ "title": "Bubble dynamics: a single gas bubble in an ultrasonic or megasonic sound field, Rayleigh-Plesset and Keller-Miksis equations and the cavitation threshold",
+ "upload_type": "software",
+ "creators": [
+  {
+   "name": "Ishaque, Hashim"
+  }
+ ],
+ "license": "MIT",
+ "keywords": [
+  "bubble dynamics",
+  "Rayleigh-Plesset",
+  "Keller-Miksis",
+  "acoustic cavitation",
+  "Blake threshold",
+  "megasonic cleaning"
+ ],
+ "description": "A browser program and a Python model for a single gas bubble in a sound field, as in ultrasonic and megasonic cleaning: Keller-Miksis and Rayleigh-Plesset equations with surface tension, viscosity, vapour pressure and heat exchange after Prosperetti, Crum and Commander (1988), and the sound pressure at which inertial cavitation starts. Every part is checked against analytical results."
+}
