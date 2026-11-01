@@ -15,7 +15,8 @@ A step is ticked here with the date it was merged.
   Water with surfactant is left out: the 35 mN/m in the Python model has no published source, and the value depends on the surfactant and its concentration.
 
 ## Regime maps
-- [ ] Frequency against pressure map for one bubble size, computed in small steps so the page stays responsive.
+- [x] Frequency against pressure map for one bubble size, computed in small steps so the page stays responsive. (2026-11-01)
+  Figure 3: 36 by 30 cells, classed by the largest radius with the same bands as the Python model (1.1 R₀ and 2 R₀).
 - [ ] Bubble size against pressure map at the chosen frequency.
 
 ## Rectified diffusion
