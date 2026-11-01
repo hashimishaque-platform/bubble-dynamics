@@ -74,6 +74,21 @@ const fmt = (x, d) => Number(x).toPrecision(d);
   rows.push(['Threshold, 3 um at 1 MHz, heat exchange / fixed kappa and mu + mu_th (adiabatic, kPa)', `1 (${fmt(c / 1e3, 4)})`, `${fmt(a / b, 7)} (${fmt(a / 1e3, 4)})`]);
   if (Math.abs(a / b - 1) > 1e-12 || !(Math.abs(a / c - 1) > 0.01)) { console.error('threshold does not use the thermal model'); process.exitCode = 1; }
 }
+// 10. water presets against the IAPWS surface tension (R1-76, 2014) and the vapour pressure equation of Wagner and Pruss (1993)
+{
+  for (const k of ['water20', 'water40', 'water60']) {
+    const L = B.LIQUIDS[k], sg = B.waterSurfaceTension(L.T), pv = B.waterVapourPressure(L.T);
+    rows.push([`${L.label}: surface tension (mN/m) and vapour pressure (kPa) vs IAPWS`, `${fmt(sg * 1e3, 4)}, ${fmt(pv / 1e3, 4)}`, `${fmt(L.sigma * 1e3, 4)}, ${fmt(L.pv / 1e3, 4)}`]);
+    if (Math.abs(L.sigma / sg - 1) > 2e-4 || Math.abs(L.pv / pv - 1) > 5e-4) { console.error(`${k} preset differs from IAPWS`); process.exitCode = 1; }
+  }
+}
+// 11. static Blake threshold of a 1 um bubble with each preset: warmer water and lower surface tension lower it
+{
+  const pa = {};
+  for (const k of Object.keys(B.LIQUIDS)) pa[k] = B.blake(1e-6, Object.assign({}, B.LIQUIDS[k], { p0: 101325, kappa: 1 })).pA;
+  rows.push(['Blake threshold of 1 um, water 20, 40, 60 C and 2-propanol 25 C (kPa)', 'falling', Object.values(pa).map((x) => fmt(x / 1e3, 4)).join(', ')]);
+  if (!(pa.water20 > pa.water40 && pa.water40 > pa.water60 && pa.water60 > pa.ipa25)) { console.error('Blake threshold does not fall'); process.exitCode = 1; }
+}
 const wid = Math.max(...rows.map((r) => r[0].length));
 console.log('Check'.padEnd(wid), '| Expected       | This program');
 for (const r of rows) console.log(r[0].padEnd(wid), '|', r[1].padEnd(14), '|', r[2]);

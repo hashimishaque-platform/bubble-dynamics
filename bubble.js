@@ -221,6 +221,35 @@ function dynamicThreshold(R0, u, cycles) {
   return Math.sqrt(lo * hi);
 }
 
+// Liquid presets, SI units, at 101.325 kPa. Sources are listed in the page (Table 1).
+// Water: density, viscosity and speed of sound from IAPWS-95 (Wagner and Pruss 2002) and the IAPWS 2008
+// viscosity formulation (Huber et al. 2009); surface tension from IAPWS R1-76(2014); vapour pressure from
+// the saturation equation of Wagner and Pruss (1993).
+// 2-propanol at 25 C: density, viscosity and speed of sound from Dubey and Kumar (2011), surface tension
+// from Rafati, Bagheri and Najafi (2010), vapour pressure from Nasirzadeh et al. (2004).
+const LIQUIDS = {
+  water20: { label: 'Water, 20 °C', T: 293.15, rho: 998.2, sigma: 0.07274, mu: 1.002e-3, pv: 2339, c: 1482 },
+  water40: { label: 'Water, 40 °C', T: 313.15, rho: 992.2, sigma: 0.06960, mu: 0.6527e-3, pv: 7385, c: 1529 },
+  water60: { label: 'Water, 60 °C', T: 333.15, rho: 983.2, sigma: 0.06624, mu: 0.4660e-3, pv: 19950, c: 1551 },
+  ipa25: { label: '2-propanol, 25 °C', T: 298.15, rho: 781.1, sigma: 0.02095, mu: 2.063e-3, pv: 5799, c: 1140 },
+};
+
+// Surface tension of water, IAPWS R1-76(2014): sigma = 235.8 mN/m tau^1.256 (1 - 0.625 tau), tau = 1 - T/Tc.
+function waterSurfaceTension(T) {
+  const tau = 1 - T / 647.096;
+  return 235.8e-3 * Math.pow(tau, 1.256) * (1 - 0.625 * tau);
+}
+
+// Vapour pressure of water, Wagner and Pruss (1993):
+// ln(p/pc) = (Tc/T)(a1 tau + a2 tau^1.5 + a3 tau^3 + a4 tau^3.5 + a5 tau^4 + a6 tau^7.5), Tc = 647.096 K, pc = 22.064 MPa.
+function waterVapourPressure(T) {
+  const a = [-7.85951783, 1.84408259, -11.7866497, 22.6807411, -15.9618719, 1.80122502], e = [1, 1.5, 3, 3.5, 4, 7.5];
+  const tau = 1 - T / 647.096;
+  let s = 0;
+  for (let i = 0; i < 6; i++) s += a[i] * Math.pow(tau, e[i]);
+  return 22.064e6 * Math.exp(647.096 / T * s);
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { AIR, thermalParams, wallPressure, pInf, accel, makeParams, simulate, summarize, naturalFrequency, resonantRadius, blake, dynamicThreshold };
+  module.exports = { AIR, LIQUIDS, waterSurfaceTension, waterVapourPressure, thermalParams, wallPressure, pInf, accel, makeParams, simulate, summarize, naturalFrequency, resonantRadius, blake, dynamicThreshold };
 }
