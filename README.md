@@ -31,6 +31,10 @@ analytical results. No measured data, and no data from any research centre, were
   its starting radius (a common rule of thumb for inertial cavitation), next to the static Blake
   threshold. A second line shows the same threshold for another gas model (with heat exchange,
   or adiabatic if heat exchange is chosen), so the effect of heat exchange can be seen.
+- Draws a regime map of frequency against sound pressure for the chosen bubble: in each cell the
+  largest radius is below 1.1 R₀ (near-linear), between 1.1 and 2 R₀ (stable nonlinear) or 2 R₀
+  and more (inertial), with the bubble's resonance and the static Blake threshold marked. The map
+  is computed in small pieces so the page stays responsive.
 
 ## Checks
 
@@ -50,6 +54,9 @@ analytical results. No measured data, and no data from any research centre, were
 | Threshold of a 3 µm bubble at 1 MHz with heat exchange, divided by the same with fixed κ and μ + μ<sub>th</sub> | 1 | 1.000000 |
 | Water presets at 20, 40 and 60 °C: surface tension and vapour pressure against IAPWS R1-76 and Wagner and Pruss (1993) | equal to 4 digits | equal to 4 digits |
 | Static Blake threshold of a 1 µm bubble, water at 20, 40, 60 °C and 2-propanol at 25 °C (kPa) | falling | 142.2, 135.3, 121.5, 104.4 |
+| Regime map of a 1 µm bubble at 0.5, 1 and 2 MHz: the threshold found by bisection lies between the highest non-inertial and the lowest inertial cell of each column (kPa) | between | 157 < 169, 173, 176 ≤ 191 |
+| Regime map of a 1 µm bubble at 20 kHz (isothermal, half a cycle): boundary cells against the static Blake threshold (kPa) | 142.2 in between | 129.0, 157.0 |
+| Regime map of 36 by 30 cells computed in pieces of 30 ms (Node only) | several calls, all short | yes |
 
 ## Files
 

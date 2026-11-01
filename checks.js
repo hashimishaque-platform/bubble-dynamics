@@ -89,6 +89,39 @@ const fmt = (x, d) => Number(x).toPrecision(d);
   rows.push(['Blake threshold of 1 um, water 20, 40, 60 C and 2-propanol 25 C (kPa)', 'falling', Object.values(pa).map((x) => fmt(x / 1e3, 4)).join(', ')]);
   if (!(pa.water20 > pa.water40 && pa.water40 > pa.water60 && pa.water60 > pa.ipa25)) { console.error('Blake threshold does not fall'); process.exitCode = 1; }
 }
+// 12. regime map: in each column the threshold found by bisection lies between the highest
+// non-inertial and the lowest inertial cell
+{
+  const R0 = 1e-6, fs = [5e5, 1e6, 2e6], ps = B.logSpace(1e4, 3e6, 30), m = B.regimeMap(R0, Object.assign({}, w, { f: 1e6 }), fs, ps, 10);
+  m.step(1e9);
+  const res = fs.map((f, i) => {
+    const thr = B.dynamicThreshold(R0, Object.assign({}, w, { f }), 10);
+    let j = 0; while (j < m.np && m.rmax[j * m.nf + i] < 2) j++;
+    if (!(j > 0 && j < m.np && ps[j - 1] < thr && thr <= ps[j] * 1.005)) { console.error(`regime map column ${f} Hz disagrees with dynamicThreshold`); process.exitCode = 1; }
+    return `${fmt(ps[j - 1] / 1e3, 3)} < ${fmt(thr / 1e3, 3)} <= ${fmt(ps[j] / 1e3, 3)}`;
+  });
+  rows.push(['Regime map, 1 um at 0.5, 1, 2 MHz: bisection threshold between column cells (kPa)', 'between', res.join('; ')]);
+}
+// 13. regime map far below resonance: the boundary lies at the static Blake threshold (isothermal, slow driving)
+{
+  const R0 = 1e-6, wi = Object.assign({}, w, { kappa: 1, model: 'RP' }), ps = B.logSpace(1e4, 3e6, 30);
+  const m = B.regimeMap(R0, wi, [2e4], ps, 0.5);
+  m.step(1e9);
+  let j = 0; while (j < m.np && m.rmax[j] < 2) j++;
+  const pb = B.blake(R0, wi).pA;
+  rows.push(['Regime map, 1 um at 20 kHz, half a cycle: boundary cells vs Blake (kPa)', `${fmt(pb / 1e3, 4)} between`, `${fmt(ps[j - 1] / 1e3, 4)}, ${fmt(ps[j] / 1e3, 4)}`]);
+  if (!(j > 0 && j < m.np && ps[j - 1] < pb * 1.03 && ps[j] > pb * 0.97)) { console.error('regime map boundary is not at the Blake threshold'); process.exitCode = 1; }
+}
+// 14. the map is filled in small pieces: with 30 ms per call it needs several calls, none much longer than 30 ms
+{
+  const u = Object.assign({}, w, { f: 1e6 });
+  const m = B.regimeMap(1e-6, u, B.logSpace(2.5e5, 1e7, 36), B.logSpace(1e4, 3e6, 30), 10);
+  let calls = 0, worst = 0;
+  for (;;) { const t = Date.now(); const done = m.step(30); calls++; worst = Math.max(worst, Date.now() - t); if (done) break; }
+  const n = m.rmax.filter((x) => !Number.isNaN(x)).length;
+  rows.push(['Regime map of 36 x 30 cells in pieces of 30 ms: calls, longest call (ms), cells filled', '> 1, < 100, 1080', `${calls}, ${worst}, ${n}`]);
+  if (!(calls > 1 && worst < 100 && n === 1080)) { console.error('regime map is not computed in small pieces'); process.exitCode = 1; }
+}
 const wid = Math.max(...rows.map((r) => r[0].length));
 console.log('Check'.padEnd(wid), '| Expected       | This program');
 for (const r of rows) console.log(r[0].padEnd(wid), '|', r[1].padEnd(14), '|', r[2]);
