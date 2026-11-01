@@ -132,18 +132,27 @@ class Liquid:
     T0: float = 293.15  # temperature, K
 
 
+# Water at 101.325 kPa: density, viscosity and speed of sound from IAPWS-95 (Wagner and Pruss 2002) and the
+# IAPWS 2008 viscosity formulation (Huber et al. 2009), surface tension from IAPWS R1-76(2014), vapour
+# pressure from Wagner and Pruss (1993). 2-propanol at 25 C: density, viscosity and speed of sound from
+# Dubey and Kumar, J. Chem. Eng. Data 56 (2011) 2995, surface tension from Rafati et al., J. Chem. Eng. Data
+# 55 (2010) 4039, vapour pressure from Nasirzadeh et al., J. Chem. Eng. Data 49 (2004) 607.
+# The same values are used in the page (bubble.js, LIQUIDS). WATER_20C keeps 72.8 mN/m, so that the
+# reference values of the thermal check in checks.js stay reproducible; the page uses 72.74 mN/m (IAPWS).
 WATER_20C = Liquid()
-WATER_40C = Liquid("Water, 40 °C", 992.2, 0.653e-3, 0.0696, 1529.0, 7385.0, 313.15)
-WATER_60C = Liquid("Water, 60 °C", 983.2, 0.467e-3, 0.0662, 1551.0, 19946.0, 333.15)
+WATER_40C = Liquid("Water, 40 °C", 992.2, 0.6527e-3, 0.06960, 1529.0, 7385.0, 313.15)
+WATER_60C = Liquid("Water, 60 °C", 983.2, 0.4660e-3, 0.06624, 1551.0, 19950.0, 333.15)
+# Surface tension of 35 mN/m stands for a typical surfactant solution; it has no published source and is
+# not offered in the page.
 WATER_SURFACTANT = Liquid("Water + surfactant, 20 °C", 998.2, 1.002e-3, 0.035, 1482.0, 2339.0, 293.15)
-IPA_20C = Liquid("Isopropanol, 20 °C", 786.0, 2.37e-3, 0.0230, 1170.0, 4400.0, 293.15)
+IPA_25C = Liquid("2-propanol, 25 °C", 781.1, 2.063e-3, 0.02095, 1140.0, 5799.0, 298.15)
 
 LIQUIDS = {
     "water20": WATER_20C,
     "water40": WATER_40C,
     "water60": WATER_60C,
     "surfactant": WATER_SURFACTANT,
-    "ipa": IPA_20C,
+    "ipa": IPA_25C,
 }
 
 

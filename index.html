@@ -65,7 +65,7 @@
      "sameAs": "https://en.wikipedia.org/wiki/Ultrasonic_cleaning"
     }
    ],
-   "keywords": "bubble dynamics, Rayleigh-Plesset, Keller-Miksis, acoustic cavitation, inertial cavitation, Blake threshold, Minnaert frequency, thermal damping, megasonic cleaning, ultrasonic cleaning, wafer cleaning",
+   "keywords": "bubble dynamics, Rayleigh-Plesset, Keller-Miksis, acoustic cavitation, inertial cavitation, Blake threshold, Minnaert frequency, thermal damping, water temperature, 2-propanol, megasonic cleaning, ultrasonic cleaning, wafer cleaning",
    "breadcrumb": {
     "@id": "https://hashimishaque.com/bubble-dynamics/#breadcrumb"
    }
@@ -175,7 +175,7 @@ pre { font-size: 14px; overflow-x: auto; margin: 0 0 10px 0; }
 
 <h1>Bubble dynamics: a single gas bubble in a sound field</h1>
 <p class="text">
-This program follows one gas bubble in water while a sound wave drives it. It solves the
+This program follows one gas bubble in water, or in another liquid, while a sound wave drives it. It solves the
 Keller-Miksis equation, which is the Rayleigh-Plesset equation with a correction for the
 compressibility of the liquid. Figure 1 shows how the radius changes with time. Figure 2 shows,
 for bubbles of different sizes, the sound pressure at which a bubble starts to cavitate
@@ -223,8 +223,9 @@ research centre, were used.
       </fieldset>
 
       <fieldset>
-        <legend>Liquid (water, 20 °C)</legend>
+        <legend>Liquid</legend>
         <table class="form">
+          <tr><td><label for="liq">Preset</label></td><td><select id="liq"></select></td></tr>
           <tr><td><label for="rho">Density</label></td><td><input type="number" id="rho" step="0.1"> kg/m³</td></tr>
           <tr><td><label for="sigma">Surface tension</label></td><td><input type="number" id="sigma" step="0.1"> mN/m</td></tr>
           <tr><td><label for="mu">Viscosity</label></td><td><input type="number" id="mu" step="0.001"> mPa s</td></tr>
@@ -232,7 +233,6 @@ research centre, were used.
           <tr><td><label for="c">Speed of sound</label></td><td><input type="number" id="c" step="1"> m/s</td></tr>
           <tr><td><label for="p0">Ambient pressure</label></td><td><input type="number" id="p0" step="0.1"> kPa</td></tr>
         </table>
-        <p style="margin-top:6px"><input type="button" id="water" value="Reset to water"></p>
       </fieldset>
 
       <p><input type="submit" value="Compute"></p>
@@ -322,6 +322,28 @@ p_g ≈ p_g0 (1 − Φ x) for R = R0 (1 + x): its imaginary part acts like a vis
 4 μ_th Ṙ / R.
 </p>
 
+<h2>Liquids</h2>
+<p>
+The liquid can be chosen from the list below, or its properties can be typed in. All values are
+for a pressure of 101.325 kPa. The gas in the bubble is always air, and its thermal diffusivity is
+taken at 20 °C in every case.
+</p>
+<div class="scroll"><table class="data">
+<caption style="caption-side: bottom; text-align: left; padding-top: 4px"><b>Table 1.</b> Liquid presets. Water: density, viscosity and speed of sound from the IAPWS-95 formulation (Wagner and Pruss 2002) and the IAPWS 2008 viscosity formulation (Huber et al. 2009), surface tension from IAPWS R1-76(2014), vapour pressure from the saturation equation of Wagner and Pruss (1993). 2-propanol: density, viscosity and speed of sound measured by Dubey and Kumar (2011), surface tension by Rafati, Bagheri and Najafi (2010), vapour pressure by Nasirzadeh et al. (2004).</caption>
+<tr><th>Liquid</th><th>ρ (kg/m³)</th><th>σ (mN/m)</th><th>μ (mPa s)</th><th>p<sub>v</sub> (kPa)</th><th>c (m/s)</th></tr>
+<tr><td>Water, 20 °C</td><td>998.2</td><td>72.74</td><td>1.002</td><td>2.339</td><td>1482</td></tr>
+<tr><td>Water, 40 °C</td><td>992.2</td><td>69.60</td><td>0.6527</td><td>7.385</td><td>1529</td></tr>
+<tr><td>Water, 60 °C</td><td>983.2</td><td>66.24</td><td>0.4660</td><td>19.95</td><td>1551</td></tr>
+<tr><td>2-propanol, 25 °C</td><td>781.1</td><td>20.95</td><td>2.063</td><td>5.799</td><td>1140</td></tr>
+</table></div>
+<p>
+Warm water has a higher vapour pressure and a lower surface tension, so there is less gas in
+the bubble at rest and less to hold it together. The Blake threshold falls, from 142 kPa at
+20 °C to 122 kPa at 60 °C for a 1 µm bubble. 2-propanol has less than a third of the surface
+tension of water, and the threshold for a 1 µm bubble is 104 kPa. Its viscosity is twice that
+of water, which damps the oscillation more strongly.
+</p>
+
 <h2>Checks</h2>
 <p>These checks run every time the page loads, using the same code as the figures.</p>
 <div class="scroll"><table class="data" id="checks"></table></div>
@@ -337,7 +359,9 @@ collapse it is only a rough guide. There is no gas diffusion into or out of the 
 growth over many cycles (rectified diffusion) is missing.</li>
 <li>The Keller-Miksis equation is first order in the Mach number Ṙ/c. When the wall speed during
 a collapse comes close to the speed of sound, the details of the collapse are rough.</li>
-<li>The liquid properties are constant and the sound field is a pure sine wave.</li>
+<li>The liquid properties are constant and the sound field is a pure sine wave. The heat
+exchange uses the properties of air at 20 °C for every liquid and temperature, and the gas does
+not take up vapour from the liquid.</li>
 </ul>
 
 <h2>References</h2>
@@ -353,6 +377,13 @@ a collapse comes close to the speed of sound, the details of the collapse are ro
 <li>Brennen, C. E. <i>Cavitation and Bubble Dynamics.</i> Oxford University Press, 1995.</li>
 <li>Lauterborn, W.; Kurz, T. Physics of bubble oscillations. <i>Rep. Prog. Phys.</i> 73 (2010) 106501.</li>
 <li>Çengel, Y. A.; Cimbala, J. M. Table A-9, Properties of air at 1 atm pressure (thermal diffusivity of air at 20 °C, 2.074 × 10<sup>−5</sup> m²/s). <a href="https://www.me.psu.edu/cimbala/me420/Links/Table_A_9_CC_Properties_of_Air.pdf" target="_blank" rel="noopener">PDF</a></li>
+<li>Wagner, W.; Pruss, A. International equations for the saturation properties of ordinary water substance. Revised according to the International Temperature Scale of 1990. <i>J. Phys. Chem. Ref. Data</i> 22 (1993) 783 to 787. <a href="https://doi.org/10.1063/1.555926" target="_blank" rel="noopener">doi:10.1063/1.555926</a></li>
+<li>Wagner, W.; Pruss, A. The IAPWS formulation 1995 for the thermodynamic properties of ordinary water substance for general and scientific use. <i>J. Phys. Chem. Ref. Data</i> 31 (2002) 387 to 535. <a href="https://doi.org/10.1063/1.1461829" target="_blank" rel="noopener">doi:10.1063/1.1461829</a></li>
+<li>Huber, M. L.; Perkins, R. A.; Laesecke, A.; Friend, D. G.; Sengers, J. V.; Assael, M. J.; Metaxa, I. N.; Vogel, E.; Mareš, R.; Miyagawa, K. New international formulation for the viscosity of H<sub>2</sub>O. <i>J. Phys. Chem. Ref. Data</i> 38 (2009) 101 to 125. <a href="https://doi.org/10.1063/1.3088050" target="_blank" rel="noopener">doi:10.1063/1.3088050</a></li>
+<li>IAPWS R1-76(2014). Revised release on the surface tension of ordinary water substance. International Association for the Properties of Water and Steam, 2014. <a href="https://iapws.org/relguide/Surf-H2O.html" target="_blank" rel="noopener">iapws.org</a></li>
+<li>Dubey, G. P.; Kumar, K. Densities, viscosities, and speeds of sound of binary liquid mixtures of ethylenediamine with alcohols at T = (293.15 to 313.15) K. <i>J. Chem. Eng. Data</i> 56 (2011) 2995 to 3003. <a href="https://doi.org/10.1021/je1012857" target="_blank" rel="noopener">doi:10.1021/je1012857</a></li>
+<li>Rafati, A. A.; Bagheri, A.; Najafi, M. Experimental data and correlation of surface tensions of the binary and ternary systems of water + acetonitrile + 2-propanol at 298.15 K and atmospheric pressure. <i>J. Chem. Eng. Data</i> 55 (2010) 4039 to 4043. <a href="https://doi.org/10.1021/je1001329" target="_blank" rel="noopener">doi:10.1021/je1001329</a></li>
+<li>Nasirzadeh, K.; Zimin, D.; Neueder, R.; Kunz, W. Vapor-pressure measurements of liquid solutions at different temperatures: apparatus for use over an extended temperature range and some new data. <i>J. Chem. Eng. Data</i> 49 (2004) 607 to 612. <a href="https://doi.org/10.1021/je034197x" target="_blank" rel="noopener">doi:10.1021/je034197x</a></li>
 </ol>
 
 <hr>
@@ -588,7 +619,38 @@ function dynamicThreshold(R0, u, cycles) {
   return Math.sqrt(lo * hi);
 }
 
-const WATER = { rho: 998.2, sigma: 72.8, mu: 1.002, pv: 2.339, c: 1482, p0: 101.325 };   // form units
+// Liquid presets, SI units, at 101.325 kPa. Sources are listed in the page (Table 1).
+// Water: density, viscosity and speed of sound from IAPWS-95 (Wagner and Pruss 2002) and the IAPWS 2008
+// viscosity formulation (Huber et al. 2009); surface tension from IAPWS R1-76(2014); vapour pressure from
+// the saturation equation of Wagner and Pruss (1993).
+// 2-propanol at 25 C: density, viscosity and speed of sound from Dubey and Kumar (2011), surface tension
+// from Rafati, Bagheri and Najafi (2010), vapour pressure from Nasirzadeh et al. (2004).
+const LIQUIDS = {
+  water20: { label: 'Water, 20 °C', T: 293.15, rho: 998.2, sigma: 0.07274, mu: 1.002e-3, pv: 2339, c: 1482 },
+  water40: { label: 'Water, 40 °C', T: 313.15, rho: 992.2, sigma: 0.06960, mu: 0.6527e-3, pv: 7385, c: 1529 },
+  water60: { label: 'Water, 60 °C', T: 333.15, rho: 983.2, sigma: 0.06624, mu: 0.4660e-3, pv: 19950, c: 1551 },
+  ipa25: { label: '2-propanol, 25 °C', T: 298.15, rho: 781.1, sigma: 0.02095, mu: 2.063e-3, pv: 5799, c: 1140 },
+};
+
+// Surface tension of water, IAPWS R1-76(2014): sigma = 235.8 mN/m tau^1.256 (1 - 0.625 tau), tau = 1 - T/Tc.
+function waterSurfaceTension(T) {
+  const tau = 1 - T / 647.096;
+  return 235.8e-3 * Math.pow(tau, 1.256) * (1 - 0.625 * tau);
+}
+
+// Vapour pressure of water, Wagner and Pruss (1993):
+// ln(p/pc) = (Tc/T)(a1 tau + a2 tau^1.5 + a3 tau^3 + a4 tau^3.5 + a5 tau^4 + a6 tau^7.5), Tc = 647.096 K, pc = 22.064 MPa.
+function waterVapourPressure(T) {
+  const a = [-7.85951783, 1.84408259, -11.7866497, 22.6807411, -15.9618719, 1.80122502], e = [1, 1.5, 3, 3.5, 4, 7.5];
+  const tau = 1 - T / 647.096;
+  let s = 0;
+  for (let i = 0; i < 6; i++) s += a[i] * Math.pow(tau, e[i]);
+  return 22.064e6 * Math.exp(647.096 / T * s);
+}
+
+// liquid presets in form units (the SI values and their sources are in bubble.js and Table 1)
+const formUnits = (L) => ({ rho: L.rho, sigma: +(L.sigma * 1e3).toPrecision(4), mu: +(L.mu * 1e3).toPrecision(4), pv: +(L.pv / 1e3).toPrecision(4), c: L.c });
+const WATER = Object.assign(formUnits(LIQUIDS.water20), { p0: 101.325 });   // form units
 const EXAMPLES = {
   mega:  { label: 'Megasonic cleaning: 1 MHz, 1 µm bubble, 300 kPa', R0: 1, f: 1000, pA: 300, cycles: 10, kappa: '1.4' },
   bath:  { label: 'Ultrasonic bath: 40 kHz, 5 µm bubble, 150 kPa', R0: 5, f: 40, pA: 150, cycles: 5, kappa: '1.4' },
@@ -634,7 +696,13 @@ function readInputs() {
   };
 }
 
-function setWater() { for (const k in WATER) $(k).value = WATER[k]; }
+function setLiquid(key) {
+  const L = LIQUIDS[key];
+  if (!L) return;
+  const v = formUnits(L);
+  for (const k in v) $(k).value = v[k];
+}
+const liquidName = () => (LIQUIDS[$('liq').value] ? LIQUIDS[$('liq').value].label.replace(/^W/, 'w').replace(', ', ' at ') : 'the liquid entered');
 function setExample(key) {
   const e = EXAMPLES[key];
   if (!e || key === 'custom') return;
@@ -842,7 +910,7 @@ function compute() {
   const s = summarize(P, run);
   drawTimePlot(u, run, s);
   const fTxt = u.f >= 1e6 ? `${+(u.f / 1e6).toPrecision(3)} MHz` : `${+(u.f / 1e3).toPrecision(3)} kHz`;
-  $('cap1').innerHTML = `<b>Figure 1.</b> Radius of a ${+(u.R0 * 1e6).toPrecision(3)} µm bubble in water driven at ${fTxt} with ${+(u.pA / 1e3).toPrecision(4)} kPa (${u.model === 'KM' ? 'Keller-Miksis' : 'Rayleigh-Plesset'}, ${u.thermal ? 'gas with heat exchange' : u.kappa === 1 ? 'isothermal gas' : 'adiabatic gas'}). Top: radius relative to the starting radius; dotted line at 1, dashed line at 2. Bottom: sound pressure.`;
+  $('cap1').innerHTML = `<b>Figure 1.</b> Radius of a ${+(u.R0 * 1e6).toPrecision(3)} µm bubble in ${liquidName()} driven at ${fTxt} with ${+(u.pA / 1e3).toPrecision(4)} kPa (${u.model === 'KM' ? 'Keller-Miksis' : 'Rayleigh-Plesset'}, ${u.thermal ? 'gas with heat exchange' : u.kappa === 1 ? 'isothermal gas' : 'adiabatic gas'}). Top: radius relative to the starting radius; dotted line at 1, dashed line at 2. Bottom: sound pressure.`;
   const f0 = naturalFrequency(u.R0, u);
   const Rres = resonantRadius(u.f, u);
   const bl = blake(u.R0, Object.assign({}, u, { kappa: 1 }));
@@ -939,6 +1007,16 @@ function runChecks() {
     const c = dynamicThreshold(R0, Object.assign({}, w, { f }), 10);
     rows.push([`Threshold of a 3 µm bubble at 1 MHz (10 cycles) with heat exchange, divided by the same with fixed κ and μ + μ<sub>th</sub>. In brackets: the threshold, and for adiabatic gas`, `1 (adiabatic: ${fmt(c / 1e3, 4)} kPa)`, `${fmt(a / b, 7)} (${fmt(a / 1e3, 4)} kPa)`]);
   }
+  // 10. water presets against IAPWS
+  for (const k of ['water20', 'water40', 'water60']) {
+    const L = LIQUIDS[k];
+    rows.push([`${L.label} in Table 1: surface tension and vapour pressure, against IAPWS R1-76 and Wagner and Pruss (1993)`, `${fmt(waterSurfaceTension(L.T) * 1e3, 4)} mN/m, ${fmt(waterVapourPressure(L.T) / 1e3, 4)} kPa`, `${fmt(L.sigma * 1e3, 4)} mN/m, ${fmt(L.pv / 1e3, 4)} kPa`]);
+  }
+  // 11. static Blake threshold of a 1 um bubble with each preset
+  {
+    const pa = Object.keys(LIQUIDS).map((k) => blake(1e-6, Object.assign({}, LIQUIDS[k], { p0: 101325, kappa: 1 })).pA);
+    rows.push(['Static Blake threshold of a 1 µm bubble in water at 20, 40 and 60 °C and in 2-propanol at 25 °C: a higher vapour pressure and a lower surface tension lower it', 'falling', pa.map((x) => fmt(x / 1e3, 4) + ' kPa').join(', ')]);
+  }
   $('checks').innerHTML = '<tr><th>Check</th><th>Expected</th><th>This program</th></tr>' + rows.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
 }
 
@@ -947,12 +1025,19 @@ for (const [k, v] of Object.entries(EXAMPLES)) {
   const o = document.createElement('option'); o.value = k; o.textContent = v.label; $('ex').appendChild(o);
 }
 $('ex').value = 'mega';
-setWater();
+for (const [k, v] of Object.entries(LIQUIDS)) {
+  const o = document.createElement('option'); o.value = k; o.textContent = v.label; $('liq').appendChild(o);
+}
+{ const o = document.createElement('option'); o.value = 'custom'; o.textContent = 'Your own values'; $('liq').appendChild(o); }
+$('liq').value = 'water20';
+setLiquid('water20');
+$('p0').value = WATER.p0;
 setExample('mega');
 $('ex').addEventListener('change', () => { setExample($('ex').value); compute(); });
-['R0', 'f', 'pA', 'cycles', 'rho', 'sigma', 'mu', 'pv', 'c', 'p0'].forEach((id) => $(id).addEventListener('change', () => { $('ex').value = 'custom'; compute(); }));
+['R0', 'f', 'pA', 'cycles', 'p0'].forEach((id) => $(id).addEventListener('change', () => { $('ex').value = 'custom'; compute(); }));
+['rho', 'sigma', 'mu', 'pv', 'c'].forEach((id) => $(id).addEventListener('change', () => { $('liq').value = 'custom'; compute(); }));
+$('liq').addEventListener('change', () => { setLiquid($('liq').value); compute(); });
 ['model', 'kappa'].forEach((id) => $(id).addEventListener('change', compute));
-$('water').addEventListener('click', () => { setWater(); compute(); });
 $('form').addEventListener('submit', (ev) => { ev.preventDefault(); compute(); });
 
 compute();
