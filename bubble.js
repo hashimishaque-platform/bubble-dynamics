@@ -202,14 +202,19 @@ function blake(R0, u) {
   return { Rc, pA: u.p0 - pLiquidMin };
 }
 
+// Largest radius R/R0 reached within the given number of cycles. The run stops at 2.5 R0, which is
+// enough to tell whether the bubble reaches 2 R0, so a larger growth is returned as Infinity.
+function peakRadius(R0, f, pA, u, cycles) {
+  const P = makeParams(Object.assign({}, u, { R0, f, pA }));
+  const run = simulate(P, cycles, { rStop: 2.5, rtol: 1e-7, atol: 1e-10, maxSteps: 60000 });
+  if (run.stopped === 'unbounded growth') return Infinity;
+  return summarize(P, run).rmax;
+}
+
 // Smallest sound amplitude for which R reaches 2 R0 within the given number of cycles.
 function dynamicThreshold(R0, u, cycles) {
-  const reaches = (pA) => {
-    const P = makeParams(Object.assign({}, u, { R0, pA }));
-    const run = simulate(P, cycles, { rStop: 2.5, rtol: 1e-7, atol: 1e-10, maxSteps: 60000 });
-    if (run.stopped === 'unbounded growth') return true;
-    return summarize(P, run).rmax >= 2;
-  };
+  const f = u.f;
+  const reaches = (pA) => peakRadius(R0, f, pA, u, cycles) >= 2;
   let lo = 1e2, hi = 1e7;           // Pa
   if (reaches(lo)) return lo;
   if (!reaches(hi)) return NaN;
@@ -220,6 +225,33 @@ function dynamicThreshold(R0, u, cycles) {
   }
   return Math.sqrt(lo * hi);
 }
+
+// Regime from the largest radius, as in the Python model: below 1.1 R0 a near-linear pulsation,
+// up to 2 R0 a stable nonlinear oscillation, from 2 R0 on inertial cavitation.
+const regimeOf = (rmax) => (rmax >= 2 ? 2 : rmax >= 1.1 ? 1 : 0);
+
+// Frequency against sound pressure map for one bubble radius R0. Both axes are logarithmic.
+// The map is filled in small pieces: each call of step(ms) computes cells until ms milliseconds
+// have passed and returns true when the map is complete, so a page can stay responsive.
+// rmax[j * nf + i] is the largest radius at frequency fs[i] and pressure ps[j].
+function regimeMap(R0, u, fs, ps, cycles) {
+  const nf = fs.length, np = ps.length;
+  const m = { R0, fs, ps, nf, np, rmax: new Array(nf * np).fill(NaN), next: 0 };
+  m.step = (ms) => {
+    const t0 = Date.now();
+    while (m.next < nf * np) {
+      const i = m.next % nf, j = Math.floor(m.next / nf);
+      m.rmax[m.next] = peakRadius(R0, fs[i], ps[j], u, cycles);
+      m.next++;
+      if (Date.now() - t0 >= ms) break;
+    }
+    return m.next >= nf * np;
+  };
+  return m;
+}
+
+// n points spaced evenly on a log scale from lo to hi.
+const logSpace = (lo, hi, n) => Array.from({ length: n }, (_, i) => lo * Math.pow(hi / lo, i / (n - 1)));
 
 // Liquid presets, SI units, at 101.325 kPa. Sources are listed in the page (Table 1).
 // Water: density, viscosity and speed of sound from IAPWS-95 (Wagner and Pruss 2002) and the IAPWS 2008
@@ -251,5 +283,5 @@ function waterVapourPressure(T) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { AIR, LIQUIDS, waterSurfaceTension, waterVapourPressure, thermalParams, wallPressure, pInf, accel, makeParams, simulate, summarize, naturalFrequency, resonantRadius, blake, dynamicThreshold };
+  module.exports = { AIR, LIQUIDS, waterSurfaceTension, waterVapourPressure, thermalParams, wallPressure, pInf, accel, makeParams, simulate, summarize, naturalFrequency, resonantRadius, blake, peakRadius, dynamicThreshold, regimeOf, regimeMap, logSpace };
 }
