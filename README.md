@@ -24,6 +24,8 @@ analytical results. No measured data, and no data from any research centre, were
 - The gas can be adiabatic, isothermal, or exchange heat with the liquid. The last option takes an
   effective polytropic exponent and a thermal damping from the linear theory of Prosperetti, Crum
   and Commander (1988), for the chosen bubble size and frequency.
+- The liquid can be water at 20, 40 or 60 °C (IAPWS formulations) or 2-propanol at 25 °C
+  (published measurements), or any properties typed in. The sources are listed in the page.
 - Shows the bubble radius and the sound pressure against time.
 - Maps, for bubbles of different sizes, the sound pressure at which a bubble first grows to twice
   its starting radius (a common rule of thumb for inertial cavitation), next to the static Blake
@@ -46,6 +48,8 @@ analytical results. No measured data, and no data from any research centre, were
 | Heat exchange limits: κ for 0.1 µm at 1 kHz, and for 1 mm at 1 MHz | 1, close to 1.4 | 1.000000, 1.398 |
 | Resonant radius at 1 MHz with heat exchange (µm) | between 3.144 and 3.707 | 3.184 |
 | Threshold of a 3 µm bubble at 1 MHz with heat exchange, divided by the same with fixed κ and μ + μ<sub>th</sub> | 1 | 1.000000 |
+| Water presets at 20, 40 and 60 °C: surface tension and vapour pressure against IAPWS R1-76 and Wagner and Pruss (1993) | equal to 4 digits | equal to 4 digits |
+| Static Blake threshold of a 1 µm bubble, water at 20, 40, 60 °C and 2-propanol at 25 °C (kPa) | falling | 142.2, 135.3, 121.5, 104.4 |
 
 ## Files
 
