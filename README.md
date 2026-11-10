@@ -11,6 +11,29 @@ libraries, plus a Python model with more physics.
 
 ![Radius of a 1 µm bubble driven at 1 MHz and 300 kPa, and the cavitation threshold against bubble size](screenshot.png)
 
+## How to run it
+
+Use it online at the link above, or run it on your own computer. You need
+[Node.js](https://nodejs.org) 18 or newer for the checks and Python 3 to rebuild the page.
+No packages need to be installed for the page itself.
+
+```
+git clone https://github.com/hashimishaque-platform/bubble-dynamics.git
+cd bubble-dynamics
+python3 -m http.server 8000      # then open http://localhost:8000 in a browser
+```
+
+The Python model needs NumPy (SciPy, Matplotlib and Numba are optional):
+
+```
+pip install numpy scipy matplotlib
+python3 python/bubble_dynamics.py --simulate 2 40 150
+```
+
+To change the program, edit `template.html` or `bubble.js` and rebuild the page with `python3 build.py`.
+Then run the checks with `node checks.js`; it prints a table of each check with the
+expected value and the result of the program.
+
 ## About the data
 
 This is a theoretical simulation built from published equations. The checks compare it with known
