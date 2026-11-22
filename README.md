@@ -58,6 +58,8 @@ analytical results. No measured data, and no data from any research centre, were
   largest radius is below 1.1 R₀ (near-linear), between 1.1 and 2 R₀ (stable nonlinear) or 2 R₀
   and more (inertial), with the bubble's resonance and the static Blake threshold marked. The map
   is computed in small pieces so the page stays responsive.
+- Draws a second regime map, of bubble radius against sound pressure at the chosen frequency, with
+  the same bands, the radius in resonance and the static Blake threshold marked.
 
 ## Checks
 
@@ -80,6 +82,10 @@ analytical results. No measured data, and no data from any research centre, were
 | Regime map of a 1 µm bubble at 0.5, 1 and 2 MHz: the threshold found by bisection lies between the highest non-inertial and the lowest inertial cell of each column (kPa) | between | 157 < 169, 173, 176 ≤ 191 |
 | Regime map of a 1 µm bubble at 20 kHz (isothermal, half a cycle): boundary cells against the static Blake threshold (kPa) | 142.2 in between | 129.0, 157.0 |
 | Regime map of 36 by 30 cells computed in pieces of 30 ms (Node only) | several calls, all short | yes |
+| Size map at 1 MHz for 1, 2 and 3 µm: the threshold found by bisection lies between the highest non-inertial and the lowest inertial cell of each column (kPa) | between | 157 < 173 ≤ 191; 129 < 144 ≤ 157; 58.7 < 58.9 ≤ 71.5 |
+| Size map column for 1 µm at 1 MHz against the 1 MHz column of the frequency map for 1 µm (Node only) | 30 of 30 cells equal | 30 of 30 |
+| Size map at 20 kHz (isothermal, half a cycle) for 0.5, 1, 2 and 5 µm: static Blake threshold between the boundary cells (kPa) | between | 195.8, 142.2, 117.2, 104.3 each in between |
+| Size map of 36 by 30 cells computed in pieces of 30 ms (Node only) | several calls, all short | yes |
 
 ## Files
 

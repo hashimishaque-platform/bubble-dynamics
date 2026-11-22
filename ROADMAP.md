@@ -17,7 +17,8 @@ A step is ticked here with the date it was merged.
 ## Regime maps
 - [x] Frequency against pressure map for one bubble size, computed in small steps so the page stays responsive. (2026-11-01)
   Figure 3: 36 by 30 cells, classed by the largest radius with the same bands as the Python model (1.1 R₀ and 2 R₀).
-- [ ] Bubble size against pressure map at the chosen frequency.
+- [x] Bubble size against pressure map at the chosen frequency. (2026-11-22)
+  Figure 4: 36 by 30 cells over the radius range of Figure 2, with the same bands as Figure 3. Its red boundary agrees with the bisection threshold of Figure 2.
 
 ## Rectified diffusion
 - [ ] Threshold for rectified diffusion against bubble size (Eller and Flynn 1965, in the form given by Crum 1984), with a check against a published value.
