@@ -230,24 +230,37 @@ function dynamicThreshold(R0, u, cycles) {
 // up to 2 R0 a stable nonlinear oscillation, from 2 R0 on inertial cavitation.
 const regimeOf = (rmax) => (rmax >= 2 ? 2 : rmax >= 1.1 ? 1 : 0);
 
-// Frequency against sound pressure map for one bubble radius R0. Both axes are logarithmic.
-// The map is filled in small pieces: each call of step(ms) computes cells until ms milliseconds
-// have passed and returns true when the map is complete, so a page can stay responsive.
-// rmax[j * nf + i] is the largest radius at frequency fs[i] and pressure ps[j].
-function regimeMap(R0, u, fs, ps, cycles) {
-  const nf = fs.length, np = ps.length;
-  const m = { R0, fs, ps, nf, np, rmax: new Array(nf * np).fill(NaN), next: 0 };
+// Fill a grid of n cells in small pieces: each call of step(ms) computes cells with cell(k) until
+// ms milliseconds have passed and returns true when the grid is complete, so a page can stay responsive.
+function fillInPieces(m, n, cell) {
+  m.rmax = new Array(n).fill(NaN);
+  m.next = 0;
   m.step = (ms) => {
     const t0 = Date.now();
-    while (m.next < nf * np) {
-      const i = m.next % nf, j = Math.floor(m.next / nf);
-      m.rmax[m.next] = peakRadius(R0, fs[i], ps[j], u, cycles);
+    while (m.next < n) {
+      m.rmax[m.next] = cell(m.next);
       m.next++;
       if (Date.now() - t0 >= ms) break;
     }
-    return m.next >= nf * np;
+    return m.next >= n;
   };
   return m;
+}
+
+// Frequency against sound pressure map for one bubble radius R0. Both axes are logarithmic.
+// rmax[j * nf + i] is the largest radius at frequency fs[i] and pressure ps[j].
+function regimeMap(R0, u, fs, ps, cycles) {
+  const nf = fs.length, np = ps.length;
+  const m = { R0, fs, ps, nf, np };
+  return fillInPieces(m, nf * np, (k) => peakRadius(R0, fs[k % nf], ps[Math.floor(k / nf)], u, cycles));
+}
+
+// Bubble radius against sound pressure map at one frequency f, the same as size_pressure_map in the
+// Python model. rmax[j * nR + i] is the largest radius (relative to Rs[i]) at radius Rs[i] and pressure ps[j].
+function sizeMap(f, u, Rs, ps, cycles) {
+  const nR = Rs.length, np = ps.length;
+  const m = { f, Rs, ps, nR, np };
+  return fillInPieces(m, nR * np, (k) => peakRadius(Rs[k % nR], f, ps[Math.floor(k / nR)], u, cycles));
 }
 
 // n points spaced evenly on a log scale from lo to hi.
@@ -283,5 +296,5 @@ function waterVapourPressure(T) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { AIR, LIQUIDS, waterSurfaceTension, waterVapourPressure, thermalParams, wallPressure, pInf, accel, makeParams, simulate, summarize, naturalFrequency, resonantRadius, blake, peakRadius, dynamicThreshold, regimeOf, regimeMap, logSpace };
+  module.exports = { AIR, LIQUIDS, waterSurfaceTension, waterVapourPressure, thermalParams, wallPressure, pInf, accel, makeParams, simulate, summarize, naturalFrequency, resonantRadius, blake, peakRadius, dynamicThreshold, regimeOf, regimeMap, sizeMap, logSpace };
 }
