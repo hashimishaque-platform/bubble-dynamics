@@ -19,10 +19,10 @@ META = {
     'title': 'Rayleigh-Plesset bubble dynamics simulator | Hashim Ishaque',
     'headline': 'Bubble dynamics: a single gas bubble in a sound field',
     'description': ('A gas bubble in an ultrasonic or megasonic field, as in wafer cleaning: Keller-Miksis '
-                    'equation, Blake threshold and a frequency-pressure cavitation regime map.'),
+                    'equation, Blake threshold and regime maps over frequency and size.'),
     'image_alt': 'Radius of a 1 µm bubble driven at 1 MHz and 300 kPa against time, with the sound pressure below',
     'keywords': ('bubble dynamics, Rayleigh-Plesset, Keller-Miksis, acoustic cavitation, inertial cavitation, '
-                 'Blake threshold, cavitation regime map, Minnaert frequency, thermal damping, water temperature, 2-propanol, megasonic cleaning, ultrasonic cleaning, wafer cleaning'),
+                 'Blake threshold, cavitation regime map, bubble size map, Minnaert frequency, thermal damping, water temperature, 2-propanol, megasonic cleaning, ultrasonic cleaning, wafer cleaning'),
     'languages': ['JavaScript', 'Python'],
     'about': [
         ('Rayleigh-Plesset equation', 'https://en.wikipedia.org/wiki/Rayleigh%E2%80%93Plesset_equation'),

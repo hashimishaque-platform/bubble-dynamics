@@ -53,7 +53,7 @@ This program follows one gas bubble in water, or in another liquid, while a soun
 Keller-Miksis equation, which is the Rayleigh-Plesset equation with a correction for the
 compressibility of the liquid. Figure 1 shows how the radius changes with time. Figure 2 shows,
 for bubbles of different sizes, the sound pressure at which a bubble starts to cavitate
-inertially. Figure 3 is a map over frequency and sound pressure for the chosen bubble. Choose an example or enter your own values and press Compute.
+inertially. Figure 3 is a map over frequency and sound pressure for the chosen bubble, and Figure 4 a map over bubble size and sound pressure at the chosen frequency. Choose an example or enter your own values and press Compute.
 </p>
 <p class="text">
 <b>About the data.</b> This is a theoretical simulation built from published equations. The
@@ -71,6 +71,8 @@ research centre, were used.
     <p class="caption" id="cap2"></p>
     <svg id="plot3" class="plot" viewBox="0 0 640 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Regime map: sound pressure against frequency for the chosen bubble radius"></svg>
     <p class="caption" id="cap3"></p>
+    <svg id="plot4" class="plot" viewBox="0 0 640 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Regime map: sound pressure against bubble radius at the chosen frequency"></svg>
+    <p class="caption" id="cap4"></p>
   </div>
 
   <div class="side">
@@ -171,6 +173,16 @@ boundary, grey cells can lie above red ones. There the response of the bubble is
 nonlinear, and its largest radius does not always grow steadily with the sound pressure, so the
 boundary is not always a single clean line. The map has 36 by 30 cells and is computed in small pieces, so the page
 stays responsive while it fills in.
+</p>
+<p>
+Figure 4 is the same kind of map, but over the bubble radius at the frequency chosen in the
+form, as in the size against pressure map of the Python model. Its radius axis is the same as in
+Figure 2, and the boundary of the red area follows the red line of Figure 2. The map shows in
+addition where the gentle and the nonlinear oscillations lie. The lowest inertial pressure is
+found near the radius in resonance with the sound (dotted line). Bubbles much smaller than that
+are held by surface tension, and their boundary follows the static Blake threshold (dashed curve)
+when the sound is slow compared with their own oscillation. Bubbles much larger than resonance
+cannot follow the sound. Figure 4 also has 36 by 30 cells and is filled in after Figure 3.
 </p>
 
 <h2>Model</h2>
@@ -646,6 +658,101 @@ function updateCaption3(u, done) {
   $('cap3').innerHTML = s;
 }
 
+// ---------- Figure 4: regime map, sound pressure against bubble radius at the chosen frequency ----------
+const fig4 = { key: null, map: null, Rres: NaN, busy: 0 };
+function drawSizeMapPlot(u) {
+  const svg = $('plot4');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  el(svg, 'rect', { x: 0, y: 0, width: 640, height: 400, fill: '#ffffff' });
+  const X0 = 62, X1 = 620, Y0 = 16, Y1 = 330;
+  const m = fig4.map;
+  if (!m) return;
+  const lo = m.Rs[0], hi = m.Rs[m.nR - 1];
+  const dl = Math.log(hi / lo) / (m.nR - 1), dp = Math.log(MAP_PHI / MAP_PLO) / (m.np - 1);
+  const rlo = lo * Math.exp(-dl / 2), rhi = hi * Math.exp(dl / 2), plo = MAP_PLO * Math.exp(-dp / 2), phi = MAP_PHI * Math.exp(dp / 2);
+  const xs = (R) => X0 + (X1 - X0) * Math.log(R / rlo) / Math.log(rhi / rlo);
+  const ys = (p) => Y1 - (Y1 - Y0) * Math.log(p / plo) / Math.log(phi / plo);
+  for (let k = 0; k < m.next; k++) {
+    const i = k % m.nR, j = Math.floor(k / m.nR), c = regimeOf(m.rmax[k]);
+    if (c === 0) continue;
+    const xa = xs(m.Rs[i] * Math.exp(-dl / 2)), xb = xs(m.Rs[i] * Math.exp(dl / 2));
+    const ya = ys(m.ps[j] * Math.exp(dp / 2)), yb = ys(m.ps[j] * Math.exp(-dp / 2));
+    el(svg, 'rect', { x: xa.toFixed(2), y: ya.toFixed(2), width: (xb - xa + 0.4).toFixed(2), height: (yb - ya + 0.4).toFixed(2), fill: REGIME_FILL[c], 'shape-rendering': 'crispEdges' });
+  }
+  el(svg, 'rect', { x: X0, y: Y0, width: X1 - X0, height: Y1 - Y0, fill: 'none', stroke: '#000000', 'stroke-width': 1 });
+  for (let e = -8; e <= -3; e++) {
+    for (const k of [1, 2, 5]) {
+      const R = k * Math.pow(10, e);
+      if (R < rlo || R > rhi) continue;
+      const x = xs(R);
+      el(svg, 'line', { x1: x, y1: Y1, x2: x, y2: Y1 - (k === 1 ? 6 : 3), stroke: '#000000' });
+      if (k === 1 || rhi / rlo < 300) txt(svg, x, Y1 + 16, String(+(R * 1e6).toPrecision(3)), { 'text-anchor': 'middle', 'font-size': 12 });
+    }
+  }
+  for (const p of [1e4, 2e4, 5e4, 1e5, 2e5, 5e5, 1e6, 2e6]) {
+    const y = ys(p);
+    el(svg, 'line', { x1: X0, y1: y, x2: X0 + 5, y2: y, stroke: '#000000' });
+    txt(svg, X0 - 6, y + 4, String(p / 1e3), { 'text-anchor': 'end', 'font-size': 12 });
+  }
+  txt(svg, (X0 + X1) / 2, 360, 'bubble radius R₀ (µm)', { 'text-anchor': 'middle' });
+  const lx = 16, ly = (Y0 + Y1) / 2;
+  txt(svg, lx, ly, 'sound pressure amplitude (kPa)', { 'text-anchor': 'middle', transform: `rotate(-90 ${lx} ${ly})` });
+  const cp = el(svg, 'clipPath', { id: 'c4' });
+  el(cp, 'rect', { x: X0, y: Y0, width: X1 - X0, height: Y1 - Y0 });
+  const g = el(svg, 'g', { 'clip-path': 'url(#c4)' });
+  if (isFinite(fig4.Rres) && fig4.Rres > rlo && fig4.Rres < rhi) {
+    const x = xs(fig4.Rres);
+    el(g, 'line', { x1: x, y1: Y0, x2: x, y2: Y1, stroke: '#000000', 'stroke-dasharray': '2 3' });
+    txt(g, x + 4, Y0 + 14, 'resonance', { 'font-size': 12, 'font-style': 'italic' });
+  }
+  let db = '';
+  const uIso = Object.assign({}, u, { kappa: 1 });
+  for (let i = 0; i <= 120; i++) {
+    const R = rlo * Math.pow(rhi / rlo, i / 120);
+    db += (i ? 'L' : 'M') + xs(R).toFixed(1) + ',' + ys(blake(R, uIso).pA).toFixed(1) + ' ';
+  }
+  el(g, 'path', { d: db, fill: 'none', stroke: '#000000', 'stroke-width': 1.1, 'stroke-dasharray': '6 4' });
+  if (u.pA >= plo && u.pA <= phi && u.R0 >= rlo && u.R0 <= rhi) {
+    const x = xs(u.R0), y = ys(u.pA);
+    el(g, 'line', { x1: x - 6, y1: y, x2: x + 6, y2: y, stroke: '#000000', 'stroke-width': 1.6 });
+    el(g, 'line', { x1: x, y1: y - 6, x2: x, y2: y + 6, stroke: '#000000', 'stroke-width': 1.6 });
+  }
+  txt(svg, X0, 388, 'largest radius:', { 'font-size': 12 });
+  REGIME_NAME.forEach((name, k) => {
+    const x = X0 + 90 + 150 * k;
+    el(svg, 'rect', { x, y: 377, width: 18, height: 13, fill: REGIME_FILL[k], stroke: '#808080' });
+    txt(svg, x + 24, 388, name, { 'font-size': 12 });
+  });
+}
+
+function computeSizeMap(u) {
+  const { lo, hi, Rres } = fig2Range(u);
+  const key = [fig2Key(u), lo, hi].join('|');
+  if (fig4.key === key) { drawSizeMapPlot(u); updateCaption4(u, true); return; }
+  fig4.key = key;
+  const job = ++fig4.busy;
+  fig4.Rres = Rres;
+  fig4.map = sizeMap(u.f, u, logSpace(lo, hi, MAP_NF), logSpace(MAP_PLO, MAP_PHI, MAP_NP), u.cycles);
+  const step = () => {
+    if (job !== fig4.busy) return;               // a newer request replaced this one
+    if (fig3.map && fig3.map.next < fig3.map.nf * fig3.map.np) { setTimeout(step, 20); return; }   // Figure 3 first
+    const done = fig4.map.step(40);
+    drawSizeMapPlot(currentInputs);
+    updateCaption4(u, done);
+    if (!done) setTimeout(step, 0);
+  };
+  drawSizeMapPlot(u);
+  updateCaption4(u, false);
+  setTimeout(step, 0);
+}
+
+function updateCaption4(u, done) {
+  const fTxt = u.f >= 1e6 ? `${+(u.f / 1e6).toPrecision(3)} MHz` : `${+(u.f / 1e3).toPrecision(3)} kHz`;
+  let s = `<b>Figure 4.</b> Regime map at ${fTxt} in ${liquidName()}: largest radius within ${u.cycles} cycles against bubble radius and sound pressure (${u.model === 'KM' ? 'Keller-Miksis' : 'Rayleigh-Plesset'}, ${u.thermal ? 'gas with heat exchange' : u.kappa === 1 ? 'isothermal gas' : 'adiabatic gas'}). White: near-linear pulsation. Grey: stable nonlinear oscillation. Red: inertial cavitation. Dotted: radius in resonance at this frequency${isFinite(fig4.Rres) ? ', ' + fmt(fig4.Rres * 1e6, 3) + ' µm' : ''}. Dashed: static Blake threshold. Cross: the case in Figure 1 (${+(u.R0 * 1e6).toPrecision(3)} µm).`;
+  if (!done && fig4.map) s += ` <i>${fig4.map.next ? 'Computing' : 'Waiting for Figure 3'}, ${fig4.map.next} of ${fig4.map.nR * fig4.map.np} cells.</i>`;
+  $('cap4').innerHTML = s;
+}
+
 // ---------- results ----------
 let currentInputs = null;
 function compute() {
@@ -683,6 +790,7 @@ function compute() {
   $('notes').innerHTML = notes.map((n) => `<p>${n}</p>`).join('');
   computeThreshold(u);
   computeMap(u);
+  computeSizeMap(u);
 }
 
 // ---------- checks against known results ----------
@@ -782,6 +890,28 @@ function runChecks() {
     m.step(1e9);
     let j = 0; while (j < m.np && m.rmax[j] < 2) j++;
     rows.push(['Regime map of a 1 µm bubble at 20 kHz (isothermal gas, half a cycle): highest non-inertial and lowest inertial cell, against the static Blake threshold', `${fmt(blake(R0, wi).pA / 1e3, 4)} kPa in between`, `${fmt(ps[j - 1] / 1e3, 4)} kPa, ${fmt(ps[j] / 1e3, 4)} kPa`]);
+  }
+  // 14. size map at 1 MHz: the threshold from bisection lies between the cells of each column
+  {
+    const f = 1e6, Rs = [1e-6, 2e-6, 3e-6], ps = logSpace(1e4, 3e6, 30), m = sizeMap(f, Object.assign({}, w, { f }), Rs, ps, 10);
+    m.step(1e9);
+    const res = Rs.map((R0, i) => {
+      const thr = dynamicThreshold(R0, Object.assign({}, w, { f }), 10);
+      let j = 0; while (j < m.np && m.rmax[j * m.nR + i] < 2) j++;
+      return `${fmt(ps[j - 1] / 1e3, 3)} &lt; ${fmt(thr / 1e3, 3)} ≤ ${fmt(ps[j] / 1e3, 3)}`;
+    });
+    rows.push(['Size map at 1 MHz (10 cycles) for 1, 2 and 3 µm bubbles: the threshold from bisection lies between the highest non-inertial and the lowest inertial cell of its column (kPa)', 'between', res.join('; ')]);
+  }
+  // 15. size map with slow driving: the boundary of each column lies at the static Blake threshold
+  {
+    const wi = Object.assign({}, w, { kappa: 1, model: 'RP' }), Rs = [0.5e-6, 1e-6, 2e-6, 5e-6], ps = logSpace(1e4, 3e6, 30);
+    const m = sizeMap(2e4, wi, Rs, ps, 0.5);
+    m.step(1e9);
+    const res = Rs.map((R0, i) => {
+      let j = 0; while (j < m.np && m.rmax[j * m.nR + i] < 2) j++;
+      return `${fmt(ps[j - 1] / 1e3, 3)} &lt; ${fmt(blake(R0, wi).pA / 1e3, 4)} &lt; ${fmt(ps[j] / 1e3, 3)}`;
+    });
+    rows.push(['Size map at 20 kHz (isothermal gas, half a cycle) for 0.5, 1, 2 and 5 µm bubbles: the static Blake threshold lies between the highest non-inertial and the lowest inertial cell of its column (kPa)', 'between', res.join('; ')]);
   }
   $('checks').innerHTML = '<tr><th>Check</th><th>Expected</th><th>This program</th></tr>' + rows.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
 }

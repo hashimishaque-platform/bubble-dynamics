@@ -122,6 +122,54 @@ const fmt = (x, d) => Number(x).toPrecision(d);
   rows.push(['Regime map of 36 x 30 cells in pieces of 30 ms: calls, longest call (ms), cells filled', '> 1, < 100, 1080', `${calls}, ${worst}, ${n}`]);
   if (!(calls > 1 && worst < 100 && n === 1080)) { console.error('regime map is not computed in small pieces'); process.exitCode = 1; }
 }
+// 15. size map at 1 MHz: in each column the threshold found by bisection lies between the highest
+// non-inertial and the lowest inertial cell
+{
+  const f = 1e6, Rs = [1e-6, 2e-6, 3e-6], ps = B.logSpace(1e4, 3e6, 30), m = B.sizeMap(f, Object.assign({}, w, { f }), Rs, ps, 10);
+  m.step(1e9);
+  const res = Rs.map((R0, i) => {
+    const thr = B.dynamicThreshold(R0, Object.assign({}, w, { f }), 10);
+    let j = 0; while (j < m.np && m.rmax[j * m.nR + i] < 2) j++;
+    if (!(j > 0 && j < m.np && ps[j - 1] < thr && thr <= ps[j] * 1.005)) { console.error(`size map column ${R0} m disagrees with dynamicThreshold`); process.exitCode = 1; }
+    return `${fmt(ps[j - 1] / 1e3, 3)} < ${fmt(thr / 1e3, 3)} <= ${fmt(ps[j] / 1e3, 3)}`;
+  });
+  rows.push(['Size map at 1 MHz, 1, 2, 3 um: bisection threshold between column cells (kPa)', 'between', res.join('; ')]);
+}
+// 16. the two maps agree where they meet: the 1 um column of the size map at 1 MHz equals the
+// 1 MHz column of the frequency map for 1 um
+{
+  const u = Object.assign({}, w, { f: 1e6 }), ps = B.logSpace(1e4, 3e6, 30);
+  const a = B.sizeMap(1e6, u, [0.5e-6, 1e-6], ps, 10), b = B.regimeMap(1e-6, u, [5e5, 1e6], ps, 10);
+  a.step(1e9); b.step(1e9);
+  let same = 0;
+  for (let j = 0; j < ps.length; j++) if (a.rmax[j * 2 + 1] === b.rmax[j * 2 + 1]) same++;
+  rows.push(['Size map column 1 um at 1 MHz vs frequency map column 1 MHz for 1 um: equal cells', '30 of 30', `${same} of 30`]);
+  if (same !== 30) { console.error('size map and frequency map disagree'); process.exitCode = 1; }
+}
+// 17. size map with slow driving (20 kHz, half a cycle, isothermal gas): in each column the boundary
+// lies at the static Blake threshold of that bubble
+{
+  const wi = Object.assign({}, w, { kappa: 1, model: 'RP' }), Rs = [0.5e-6, 1e-6, 2e-6, 5e-6], ps = B.logSpace(1e4, 3e6, 30);
+  const m = B.sizeMap(2e4, wi, Rs, ps, 0.5);
+  m.step(1e9);
+  const res = Rs.map((R0, i) => {
+    let j = 0; while (j < m.np && m.rmax[j * m.nR + i] < 2) j++;
+    const pb = B.blake(R0, wi).pA;
+    if (!(j > 0 && j < m.np && ps[j - 1] < pb * 1.03 && ps[j] > pb * 0.97)) { console.error(`size map boundary at ${R0} m is not at the Blake threshold`); process.exitCode = 1; }
+    return `${fmt(ps[j - 1] / 1e3, 3)} < ${fmt(pb / 1e3, 4)} < ${fmt(ps[j] / 1e3, 3)}`;
+  });
+  rows.push(['Size map at 20 kHz, half a cycle, 0.5, 1, 2, 5 um: Blake between boundary cells (kPa)', 'between', res.join('; ')]);
+}
+// 18. the size map is filled in small pieces as well
+{
+  const u = Object.assign({}, w, { f: 1e6 });
+  const m = B.sizeMap(1e6, u, B.logSpace(0.1e-6, 20e-6, 36), B.logSpace(1e4, 3e6, 30), 10);
+  let calls = 0, worst = 0;
+  for (;;) { const t = Date.now(); const done = m.step(30); calls++; worst = Math.max(worst, Date.now() - t); if (done) break; }
+  const n = m.rmax.filter((x) => !Number.isNaN(x)).length;
+  rows.push(['Size map of 36 x 30 cells in pieces of 30 ms: calls, longest call (ms), cells filled', '> 1, < 100, 1080', `${calls}, ${worst}, ${n}`]);
+  if (!(calls > 1 && worst < 100 && n === 1080)) { console.error('size map is not computed in small pieces'); process.exitCode = 1; }
+}
 const wid = Math.max(...rows.map((r) => r[0].length));
 console.log('Check'.padEnd(wid), '| Expected       | This program');
 for (const r of rows) console.log(r[0].padEnd(wid), '|', r[1].padEnd(14), '|', r[2]);
